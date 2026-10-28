@@ -4,6 +4,9 @@ updates:
     directory: /
     schedule: { interval: weekly }
     labels: [tooling, dependencies]
+    # a release must be a week old before an update is proposed: a hijacked release is usually withdrawn within days
+    cooldown:
+      default-days: 7
     # routine version updates: one pull request a week for all actions; security updates are not grouped and still
     # arrive at once, one pull request each
     groups:
