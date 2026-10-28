@@ -1,0 +1,52 @@
+{
+ "description": "One file per unexpected behaviour; each is pinned to the check that must fire.",
+ "files": [
+  {
+   "path": "negative-nat-literal.ndjson",
+   "expect": "reject",
+   "why": "Z.of_string accepts a sign and a 0x prefix: a negative natural literal would reach the arithmetic. Literals are digits only.",
+   "msg": "bad natural literal",
+   "may_decline": true
+  },
+  {
+   "path": "hex-nat-literal.ndjson",
+   "expect": "reject",
+   "why": "same, hexadecimal.",
+   "msg": "bad natural literal",
+   "may_decline": true
+  },
+  {
+   "path": "duplicate-key.ndjson",
+   "expect": "reject",
+   "why": "an object with a repeated key is read differently by different tools; refused instead of picking one reading.",
+   "msg": "duplicate key",
+   "may_decline": true
+  },
+  {
+   "path": "negative-bvar.ndjson",
+   "expect": "reject",
+   "why": "a negative de Bruijn index would corrupt the cached loose-variable range.",
+   "msg": "natural number",
+   "may_decline": true
+  },
+  {
+   "path": "negative-projection-index.ndjson",
+   "expect": "reject",
+   "why": "a negative projection index raised Invalid_argument from List.nth, exiting with the runtime's own code 2.",
+   "msg": "natural number",
+   "may_decline": true
+  },
+  {
+   "path": "safe-uses-unsafe.ndjson",
+   "expect": "reject",
+   "why": "an unsafe or partial constant is recorded with its type only, and no safe declaration can mention it.",
+   "msg": "unsafe or partial"
+  },
+  {
+   "path": "fake-nat-add.ndjson",
+   "expect": "reject",
+   "why": "Nat.add is redefined as fun a b => a, and the file claims Nat.add 123456789 987654321 = 1111111110 by rfl. With the shortcut keyed on the name the kernel would take the sum from GMP and accept; the fingerprint of the redefined constant is not the genuine one, so literals are unfolded through the file's own definition and the claim fails.",
+   "msg": "the value does not have the declared type"
+  }
+ ]
+}
