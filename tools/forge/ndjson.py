@@ -3,7 +3,7 @@ as they are first used, declarations are appended.
 
 Expressions are nested tuples:
   ("sort", level) ("const", "Name", [levels]) ("app", f, a) ("lam", ty, body) ("pi", ty, body) ("bvar", i)
-  ("let", ty, val, body) ("nat", n) ("str", s)
+  ("let", ty, val, body) ("nat", n) ("str", s) ("proj", "StructName", idx, struct)
 Levels: 0, ("succ", l), ("max", a, b), ("imax", a, b), ("param", "u").
 """
 
@@ -27,6 +27,28 @@ class Builder:
         self.n_names = 0
         self.n_levels = 0
         self.n_exprs = 0
+
+    @classmethod
+    def extending(cls, lines):
+        """A builder that continues an existing export: new names, levels and expressions are numbered after the ones in
+        [lines], and a name already defined there keeps its id. Declarations of [lines] are kept as they are."""
+        b = cls()
+        b.lines = [ln.rstrip("\n") for ln in lines]
+        by_id = {0: ""}
+        for ln in b.lines:
+            o = json.loads(ln)
+            if "in" in o:
+                sub = o.get("str") or o.get("num")
+                pre = by_id[sub["pre"]]
+                last = sub["str"] if "str" in o else str(sub["i"])
+                by_id[o["in"]] = (pre + "." if pre else "") + last
+                b.n_names = max(b.n_names, o["in"])
+            elif "il" in o:
+                b.n_levels = max(b.n_levels, o["il"])
+            elif "ie" in o:
+                b.n_exprs = max(b.n_exprs, o["ie"] + 1)
+        b.names = {v: k for k, v in by_id.items()}
+        return b
 
     def _emit(self, obj):
         self.lines.append(json.dumps(obj, separators=(",", ":"), sort_keys=True))
@@ -95,6 +117,8 @@ class Builder:
                     "body": self.expr(e[3]),
                 }
             }
+        elif k == "proj":
+            body = {"proj": {"typeName": self.name(e[1]), "idx": e[2], "struct": self.expr(e[3])}}
         elif k == "nat":
             body = {"natVal": str(e[1])}
         elif k == "str":
@@ -130,6 +154,67 @@ class Builder:
                     "hints": ({"regular": 1} if hints == "regular" else hints),
                     "safety": "safe",
                     "all": [self.name(name)],
+                }
+            }
+        )
+
+    def inductive(self, types, ctors=(), recs=()):
+        """An inductive block. [types]: dicts with name, type, num_params, num_indices (optional: lparams, ctors, is_rec,
+        num_nested); [ctors]: dicts with name, induct, type, num_params, num_fields, cidx; [recs] as in the export:
+        dicts with name, type, rules (list of (ctor, nfields, rhs-expression)), k, num_params, num_indices,
+        num_motives, num_minors. The recursors are claims: the checker derives its own and compares."""
+        names = [t["name"] for t in types]
+        self._emit(
+            {
+                "inductive": {
+                    "types": [
+                        {
+                            "name": self.name(t["name"]),
+                            "levelParams": [self.name(x) for x in t.get("lparams", [])],
+                            "type": self.expr(t["type"]),
+                            "all": [self.name(x) for x in names],
+                            "ctors": [self.name(x) for x in t.get("ctors", [])],
+                            "numParams": t["num_params"],
+                            "numIndices": t.get("num_indices", 0),
+                            "numNested": t.get("num_nested", 0),
+                            "isRec": t.get("is_rec", False),
+                            "isReflexive": t.get("is_reflexive", False),
+                            "isUnsafe": False,
+                        }
+                        for t in types
+                    ],
+                    "ctors": [
+                        {
+                            "name": self.name(c["name"]),
+                            "induct": self.name(c["induct"]),
+                            "levelParams": [self.name(x) for x in c.get("lparams", [])],
+                            "type": self.expr(c["type"]),
+                            "cidx": c["cidx"],
+                            "numParams": c["num_params"],
+                            "numFields": c["num_fields"],
+                            "isUnsafe": False,
+                        }
+                        for c in ctors
+                    ],
+                    "recs": [
+                        {
+                            "name": self.name(r["name"]),
+                            "levelParams": [self.name(x) for x in r.get("lparams", [])],
+                            "type": self.expr(r["type"]),
+                            "all": [self.name(x) for x in names],
+                            "numParams": r["num_params"],
+                            "numIndices": r.get("num_indices", 0),
+                            "numMotives": r["num_motives"],
+                            "numMinors": r["num_minors"],
+                            "k": r.get("k", False),
+                            "isUnsafe": False,
+                            "rules": [
+                                {"ctor": self.name(c), "nfields": nf, "rhs": self.expr(rhs)}
+                                for c, nf, rhs in r["rules"]
+                            ],
+                        }
+                        for r in recs
+                    ],
                 }
             }
         )

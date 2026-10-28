@@ -79,6 +79,65 @@
    "msg": "the value does not have the declared type"
   },
   {
+   "path": "eta-struct-non-structure.ndjson",
+   "expect": "reject",
+   "why": "claims every n : Nat equals Nat.succ Nat.zero. Structure eta must apply only to structure-like types (one constructor, no indices, not recursive): a mutation that skipped that test accepted this.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-offset-succ-succ.ndjson",
+   "expect": "reject",
+   "why": "claims Nat.succ 1 = Nat.succ 2 by rfl. The successor/literal rule decides this one way or the other before anything is unfolded; its 'different' verdict must stay a refusal (a mutation turned it into 'equal' and nothing noticed).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-offset-succ-lit.ndjson",
+   "expect": "reject",
+   "why": "claims Nat.succ 1 = 5 by rfl. The successor/literal rule decides this one way or the other before anything is unfolded; its 'different' verdict must stay a refusal (a mutation turned it into 'equal' and nothing noticed).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "binder-domain-mismatch.ndjson",
+   "expect": "reject",
+   "why": "f : Sort 1 -> Sort 1 is declared to have type Sort 0 -> Sort 1. Comparing two binders compares their domains first; a mutation that treated different domains as equal accepted this.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "prod-rec-on-axiom-eta.ndjson",
+   "expect": "accept",
+   "why": "Prod.rec (fun a b => a) p0 = p0.1 for an axiom p0 : Nat x Nat holds by structure eta: the stuck major premise is replaced by Prod.mk p0.1 p0.2 before the rule fires. A mutation that skipped the expansion for every constant that is not a constructor refused it (completeness: nothing else noticed)."
+  },
+  {
+   "path": "out-param-axiom-not-stripped.ndjson",
+   "expect": "reject",
+   "why": "outParam is an axiom here, so `outParam Nat` is an ordinary type and the recursor's minor premise must take `outParam Nat`, not `Nat`. The annotation is stripped only when the file's own definition is the identity-like one; a mutation that stripped it for any constant with another kind of declaration accepted the claimed recursor.",
+   "msg": "the type differs from the derivation"
+  },
+  {
+   "path": "out-param-not-identity.ndjson",
+   "expect": "reject",
+   "why": "outParam is defined as `fun a => Bool` here: `outParam Nat` is Bool, so the minor premise cannot be claimed to take Nat. Only a definition that returns its first argument makes outParam an annotation; a mutation that accepted any other shape stripped it.",
+   "msg": "the type differs from the derivation"
+  },
+  {
+   "path": "mutual-different-parameters.ndjson",
+   "expect": "reject",
+   "why": "A and B are declared together but A takes a parameter of type Sort 1 and B one of type Sort 0. All types of a mutual block share their parameters; a mutation that inverted the comparison accepted exactly this.",
+   "msg": "parameters of all inductive types must match"
+  },
+  {
+   "path": "undeclared-universe-in-max.ndjson",
+   "expect": "reject",
+   "why": "a.{v} mentions the undeclared universe parameter u inside max. Every parameter must be declared: a mutation that accepted a max when only one side was in scope accepted this.",
+   "msg": "universe parameter out of scope"
+  },
+  {
+   "path": "undeclared-universe-in-imax.ndjson",
+   "expect": "reject",
+   "why": "a.{v} mentions the undeclared universe parameter u inside imax. Every parameter must be declared: a mutation that accepted a imax when only one side was in scope accepted this.",
+   "msg": "universe parameter out of scope"
+  },
+  {
    "path": "init-int32-rxc-hassize.ndjson.gz",
    "expect": "accept",
    "why": "Init (toolchain 4.34.0-rc2) never finished this: comparing `Nat.sub A B` with `inst.1 a b` unfolded Nat.sub, which forces whnf of B = a bit-vector value mod 2^32 and peels 2^31 successors. The kernel reduces the projection application first (type_checker.cpp try_unfold_proj_app). Cut with: tools/slice.py init.ndjson out.ndjson _private.Init.Data.Range.Polymorphic.SInt.0.Int32.instRxcHasSize_eq"

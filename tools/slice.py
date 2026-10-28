@@ -11,8 +11,9 @@ import json
 import sys
 
 
-def main():
-    src, dst, targets = sys.argv[1], sys.argv[2], set(sys.argv[3:])
+def slice_lines(all_lines, targets):
+    """The lines of an export that the declarations named in [targets] need (see the module docstring)."""
+    targets = set(targets)
     names = {0: ""}
     expr_consts = {}  # ie -> set of const name ids used directly by that expression node
     expr_kids = {}  # ie -> child ie ids
@@ -21,7 +22,7 @@ def main():
     lines = []
     line_of = {}  # ("n"|"l"|"e", id) -> line number
     deps = {}  # same key -> keys it needs
-    for line in open(src):
+    for line in all_lines:
         o = json.loads(line)
         lines.append(line)
         me = len(lines) - 1
@@ -171,11 +172,17 @@ def main():
         need.add(x)
         stack += deps[x]
     keep_lines = {line_of[x] for x in need} | {decls[i][0] for i in keep} | {0}
-    with open(dst, "w") as out:
-        for n, line in enumerate(lines):
-            if n in keep_lines:
-                out.write(line)
     print(f"kept {len(keep)} of {len(decls)} declarations", file=sys.stderr)
+    return [line for n, line in enumerate(lines) if n in keep_lines]
 
 
-main()
+def main():
+    src, dst = sys.argv[1], sys.argv[2]
+    with open(src, encoding="utf-8") as f:
+        kept = slice_lines(f, sys.argv[3:])
+    with open(dst, "w", encoding="utf-8") as out:
+        out.writelines(kept)
+
+
+if __name__ == "__main__":
+    main()

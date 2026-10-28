@@ -10,6 +10,20 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "forge"))
 from ndjson import Builder  # noqa: E402
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from slice import slice_lines  # noqa: E402
+
+PRELUDE_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "tests", "arena", "good", "init-prelude.ndjson"
+)
+
+
+def base(*names):
+    """A builder continuing the part of the Init prelude that [names] need: small files that still use real Nat, Eq, ..."""
+    with open(PRELUDE_PATH, encoding="utf-8") as f:
+        return Builder.extending(slice_lines(f, names))
+
+
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tests", "regressions")
 os.makedirs(OUT, exist_ok=True)
 files = []
@@ -202,6 +216,210 @@ add(
     "constant is not the genuine one, so literals are unfolded through the file's own definition and the claim fails.",
     msg="the value does not have the declared type",
 )
+
+
+# ---- found by mutation testing: each of these accepted what it must refuse when one line of the checker was flipped ----
+ONE = ("succ", 0)
+NAT = ("const", "Nat", [])
+EQ_NAT = ("app", ("const", "Eq", [ONE]), NAT)
+
+
+def eq_nat(a, b):
+    return ("app", ("app", EQ_NAT, a), b)
+
+
+def refl_nat(a):
+    return ("app", ("app", ("const", "Eq.refl", [ONE]), NAT), a)
+
+
+def nat_succ(a):
+    return ("app", ("const", "Nat.succ", []), a)
+
+
+b = base("Nat", "Nat.succ", "Nat.zero", "Eq", "Eq.refl")
+b.theorem(
+    "t",
+    [],
+    ("pi", NAT, eq_nat(("bvar", 0), nat_succ(("const", "Nat.zero", [])))),
+    ("lam", NAT, refl_nat(("bvar", 0))),
+)
+add(
+    "eta-struct-non-structure.ndjson",
+    b.text(),
+    "reject",
+    "claims every n : Nat equals Nat.succ Nat.zero. Structure eta must apply only to structure-like types (one constructor, no "
+    "indices, not recursive): a mutation that skipped that test accepted this.",
+    msg="the value does not have the declared type",
+)
+
+for name, lhs, rhs, why in [
+    ("nat-offset-succ-succ", nat_succ(("nat", 1)), nat_succ(("nat", 2)), "Nat.succ 1 = Nat.succ 2"),
+    ("nat-offset-succ-lit", nat_succ(("nat", 1)), ("nat", 5), "Nat.succ 1 = 5"),
+]:
+    b = base("Nat", "Nat.succ", "Eq", "Eq.refl")
+    b.theorem("t", [], eq_nat(lhs, rhs), refl_nat(lhs))
+    add(
+        name + ".ndjson",
+        b.text(),
+        "reject",
+        f"claims {why} by rfl. The successor/literal rule decides this one way or the other before anything is unfolded; its 'different' verdict "
+        "must stay a refusal (a mutation turned it into 'equal' and nothing noticed).",
+        msg="the value does not have the declared type",
+    )
+
+# two binders with different domains are different, whatever the bodies do
+b = Builder()
+b.axiom("f", [], ("pi", ("sort", ONE), ("sort", ONE)))
+b.definition("d", [], ("pi", ("sort", 0), ("sort", ONE)), ("const", "f", []))
+add(
+    "binder-domain-mismatch.ndjson",
+    b.text(),
+    "reject",
+    "f : Sort 1 -> Sort 1 is declared to have type Sort 0 -> Sort 1. Comparing two binders compares their domains first; a mutation "
+    "that treated different domains as equal accepted this.",
+    msg="the value does not have the declared type",
+)
+
+# structure eta in iota reduction applies to a constant that is not a constructor
+ZERO = 0
+b = base("Nat", "Prod", "Prod.mk", "Prod.rec", "Eq", "Eq.refl")
+prod_nat = ("app", ("app", ("const", "Prod", [ZERO, ZERO]), NAT), NAT)
+b.axiom("p0", [], prod_nat)
+p0 = ("const", "p0", [])
+rec_fst = (
+    "app",
+    (
+        "app",
+        ("app", ("app", ("app", ("const", "Prod.rec", [ONE, ZERO, ZERO]), NAT), NAT), ("lam", prod_nat, NAT)),
+        ("lam", NAT, ("lam", NAT, ("bvar", 1))),
+    ),
+    p0,
+)
+b.theorem("t", [], eq_nat(rec_fst, ("proj", "Prod", 0, p0)), refl_nat(("proj", "Prod", 0, p0)))
+add(
+    "prod-rec-on-axiom-eta.ndjson",
+    b.text(),
+    "accept",
+    "Prod.rec (fun a b => a) p0 = p0.1 for an axiom p0 : Nat x Nat holds by structure eta: the stuck major premise is replaced by "
+    "Prod.mk p0.1 p0.2 before the rule fires. A mutation that skipped the expansion for every constant that is not a constructor "
+    "refused it (completeness: nothing else noticed).",
+)
+
+# `outParam` only counts as a binder annotation when the file defines it as the identity-like function
+T = ("const", "T", [])
+MK = ("const", "T.mk", [])
+
+
+def one_field_block(b, field_ty, claimed_field_ty):
+    """inductive T : Type | mk : field_ty -> T, with a recursor whose minor premise is claimed to take claimed_field_ty."""
+    u = ("param", "u")
+    motive_t = ("pi", T, ("sort", u))
+
+    def minor_t(fty):
+        return ("pi", fty, ("app", ("bvar", 1), ("app", MK, ("bvar", 0))))
+
+    b.inductive(
+        [{"name": "T", "type": ("sort", ONE), "num_params": 0, "ctors": ["T.mk"]}],
+        [
+            {
+                "name": "T.mk",
+                "induct": "T",
+                "type": ("pi", field_ty, T),
+                "cidx": 0,
+                "num_params": 0,
+                "num_fields": 1,
+            }
+        ],
+        [
+            {
+                "name": "T.rec",
+                "lparams": ["u"],
+                "type": (
+                    "pi",
+                    motive_t,
+                    ("pi", minor_t(claimed_field_ty), ("pi", T, ("app", ("bvar", 2), ("bvar", 0)))),
+                ),
+                "num_params": 0,
+                "num_motives": 1,
+                "num_minors": 1,
+                "rules": [
+                    (
+                        "T.mk",
+                        1,
+                        (
+                            "lam",
+                            motive_t,
+                            (
+                                "lam",
+                                minor_t(claimed_field_ty),
+                                ("lam", claimed_field_ty, ("app", ("bvar", 1), ("bvar", 0))),
+                            ),
+                        ),
+                    )
+                ],
+            }
+        ],
+    )
+
+
+b = base("Nat")
+b.axiom("outParam", [], ("pi", ("sort", ONE), ("sort", ONE)))
+one_field_block(b, ("app", ("const", "outParam", []), NAT), NAT)
+add(
+    "out-param-axiom-not-stripped.ndjson",
+    b.text(),
+    "reject",
+    "outParam is an axiom here, so `outParam Nat` is an ordinary type and the recursor's minor premise must take `outParam Nat`, "
+    "not `Nat`. The annotation is stripped only when the file's own definition is the identity-like one; a mutation that stripped it "
+    "for any constant with another kind of declaration accepted the claimed recursor.",
+    msg="the type differs from the derivation",
+)
+b = base("Nat", "Bool")
+b.definition(
+    "outParam",
+    ["u"],
+    ("pi", ("sort", ("param", "u")), ("sort", ONE)),
+    ("lam", ("sort", ("param", "u")), ("const", "Bool", [])),
+)
+one_field_block(b, ("app", ("const", "outParam", [("succ", 0)]), NAT), NAT)
+add(
+    "out-param-not-identity.ndjson",
+    b.text(),
+    "reject",
+    "outParam is defined as `fun a => Bool` here: `outParam Nat` is Bool, so the minor premise cannot be claimed to take Nat. Only a "
+    "definition that returns its first argument makes outParam an annotation; a mutation that accepted any other shape stripped it.",
+    msg="the type differs from the derivation",
+)
+
+# a mutual block whose types take different parameters
+b = Builder()
+b.inductive(
+    [
+        {"name": "A", "type": ("pi", ("sort", ONE), ("sort", ONE)), "num_params": 1},
+        {"name": "B", "type": ("pi", ("sort", 0), ("sort", ONE)), "num_params": 1},
+    ]
+)
+add(
+    "mutual-different-parameters.ndjson",
+    b.text(),
+    "reject",
+    "A and B are declared together but A takes a parameter of type Sort 1 and B one of type Sort 0. All types of a mutual block share "
+    "their parameters; a mutation that inverted the comparison accepted exactly this.",
+    msg="parameters of all inductive types must match",
+)
+
+# a universe parameter that is not declared, inside max / imax
+for name, lv in [("max", ("max", ("param", "u"), ("param", "v"))), ("imax", ("imax", ("param", "v"), ("param", "u")))]:
+    b = Builder()
+    b.axiom("a", ["v"], ("sort", lv))
+    add(
+        f"undeclared-universe-in-{name}.ndjson",
+        b.text(),
+        "reject",
+        f"a.{{v}} mentions the undeclared universe parameter u inside {name}. Every parameter must be declared: a mutation that "
+        "accepted a {name} when only one side was in scope accepted this.".replace("{name}", name),
+        msg="universe parameter out of scope",
+    )
 
 # files cut from an official export with tools/slice.py (kept compressed; arena.py feeds them on standard input)
 SLICE = "tools/slice.py init.ndjson out.ndjson "
