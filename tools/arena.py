@@ -13,6 +13,7 @@ verdict that contradicts the manifest: accepting what must be rejected is the fa
 """
 
 import argparse
+import gzip
 import json
 import os
 import subprocess
@@ -28,7 +29,13 @@ def run_one(binary, root, entry, timeout):
     start = time.time()
     proc_out = ""
     try:
-        proc = subprocess.run([binary, path], capture_output=True, text=True, timeout=timeout, check=False)
+        if path.endswith(".gz"):  # large files are stored compressed and fed on standard input
+            with gzip.open(path, "rb") as f:
+                data = f.read()
+            proc = subprocess.run([binary, "-"], input=data, capture_output=True, timeout=timeout, check=False)
+            proc.stdout, proc.stderr = proc.stdout.decode("utf-8", "replace"), proc.stderr.decode("utf-8", "replace")
+        else:
+            proc = subprocess.run([binary, path], capture_output=True, text=True, timeout=timeout, check=False)
         code, msg = proc.returncode, (proc.stderr.strip() or proc.stdout.strip())[:300]
         proc_out = proc.stderr + proc.stdout
     except subprocess.TimeoutExpired:

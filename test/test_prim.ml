@@ -12,6 +12,9 @@ let check_file ?(trust = false) f =
   Prim.trust_all := false;
   r
 
+(* the primitives of an official Init export (toolchain 4.34.0-rc2), cut with tools/slice.py: the source of every digest
+   that no other corpus file defines (gcd, land, lor, xor, shifts, log2, ...) *)
+let prims_file = Filename.concat (Filename.concat "../tests" "prims") "init-4.34.0-rc2.ndjson"
 let accepted = function Check.Accept -> true | _ -> false
 
 (* with the digests of the genuine definitions in the table, the official files that use literals are accepted *)
@@ -23,7 +26,12 @@ let genuine_accepted () =
       "other/nat-lit-sub.ndjson";
       "other/nat-lit-ble.ndjson";
       "tutorial/102_aNatLit.ndjson";
-    ]
+    ];
+  (* the primitives file is itself accepted without trusting any name: its definitions are the genuine ones *)
+  let ic = open_in_bin prims_file in
+  let r = Check.run ic in
+  close_in ic;
+  Alcotest.(check bool) "init primitives" true (accepted r)
 
 (* every digest in the table is the digest of an official definition found in the corpus *)
 let table_matches_corpus () =
@@ -37,9 +45,9 @@ let table_matches_corpus () =
     ]
   in
   List.iter
-    (fun f ->
+    (fun path ->
       Prim.trust_all := true;
-      let ic = open_in_bin (corpus f) in
+      let ic = open_in_bin path in
       ignore
         (Check.run
            ~on_env:(fun env ->
@@ -52,7 +60,7 @@ let table_matches_corpus () =
            ic);
       close_in ic;
       Prim.trust_all := false)
-    files;
+    (prims_file :: List.map corpus files);
   Hashtbl.iter
     (fun key name ->
       let digest = List.nth (String.split_on_char ' ' key) 1 in
@@ -60,7 +68,18 @@ let table_matches_corpus () =
         (name ^ " is in the table") true
         (List.mem digest (List.assoc name Prim_digests.table)))
     found;
-  Alcotest.(check bool) "the corpus covers some primitives" true (Hashtbl.length found > 0)
+  Alcotest.(check bool) "the corpus covers some primitives" true (Hashtbl.length found > 0);
+  (* and the other way round: no digest in the table lacks an official definition behind it *)
+  List.iter
+    (fun (name, digests) ->
+      List.iter
+        (fun d ->
+          Alcotest.(check bool)
+            (name ^ " " ^ d ^ " has a source")
+            true
+            (Hashtbl.mem found (name ^ " " ^ d)))
+        digests)
+    Prim_digests.table
 
 (* the negative control: the same file that is rejected with fingerprints is accepted when every name is trusted, which
    is the unsoundness the fingerprints close *)

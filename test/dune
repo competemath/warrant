@@ -3,4 +3,5 @@
  (libraries warrant alcotest qcheck-core qcheck-alcotest)
  (deps
   (glob_files_rec %{project_root}/tests/arena/**.ndjson)
-  (glob_files_rec %{project_root}/tests/regressions/**.ndjson)))
+  (glob_files_rec %{project_root}/tests/regressions/**.ndjson)
+  (glob_files_rec %{project_root}/tests/prims/**.ndjson)))

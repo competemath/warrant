@@ -858,10 +858,27 @@ and lazy_delta_step st tn sn =
             | None -> x
           in
           let step =
+            (* The kernel's rule (try_unfold_proj_app): when only one side can be unfolded and the other is a projection
+               application that whnf_core can reduce, reduce that one instead. Otherwise [expensive =?= inst.1 a] keeps
+               unfolding [expensive] (a function defined by well-founded or large structural recursion) when the
+               projection would have exposed a term to compare it with. *)
+            let proj_app_step e =
+              match (E.get_app_fn e).node with
+              | E.Proj _ ->
+                  let e' = whnf_core st e in
+                  if e' != e then Some e' else None
+              | _ -> None
+            in
             match (dt, ds) with
             | None, None -> `Stuck
-            | Some _, None -> `Next (unfold tn, sn)
-            | None, Some _ -> `Next (tn, unfold sn)
+            | Some _, None -> (
+                match proj_app_step sn with
+                | Some sn' -> `Next (tn, sn')
+                | None -> `Next (unfold tn, sn))
+            | None, Some _ -> (
+                match proj_app_step tn with
+                | Some tn' -> `Next (tn', sn)
+                | None -> `Next (tn, unfold sn))
             | Some d1, Some d2 ->
                 let c = compare_hints (hints_of d1) (hints_of d2) in
                 if c < 0 then `Next (unfold tn, sn)
