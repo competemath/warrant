@@ -1,0 +1,15 @@
+# The same arrangement as competemath/tengoku: everything is owned by both of the maintainer's accounts, and GitHub
+# never lets an author approve their own pull request, so the maintainer's second account reviews what the main
+# account (which an agent may drive) opens. Later lines win.
+*                        @mikael-bashir @mikaelbashir14096545
+
+# CI tests and CI configuration: the second account only. The main account's approval does not count for a change to
+# the checks that judge a pull request, the test suites, the arena corpus or the forge's generators.
+/.github/                @mikaelbashir14096545
+/test/                   @mikaelbashir14096545
+/tests/                  @mikaelbashir14096545
+/tools/                  @mikaelbashir14096545
+/.pre-commit-config.yaml @mikaelbashir14096545
+/.ocamlformat            @mikaelbashir14096545
+/dune-project            @mikaelbashir14096545
+/*.opam                  @mikaelbashir14096545

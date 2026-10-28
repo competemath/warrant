@@ -1,0 +1,11 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+    labels: [tooling, dependencies]
+    # routine version updates: one pull request a week for all actions; security updates are not grouped and still
+    # arrive at once, one pull request each
+    groups:
+      actions:
+        patterns: ["*"]

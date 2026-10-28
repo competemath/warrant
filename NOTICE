@@ -1,0 +1,7 @@
+WARRANT
+Copyright 2026 WARRANT contributors
+
+WARRANT is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+The test corpus under tests/arena/ reproduces export files from the Lean Kernel Arena
+(https://github.com/leanprover/lean-kernel-arena, Apache-2.0); each group's manifest names its source and commit.
