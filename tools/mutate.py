@@ -2,11 +2,12 @@
 """Mutation test of the kernel's own tests: apply one small source mutation at a time, rebuild, run the arena corpus
 (without the slow perf files), the regressions and a short forge round, and report which mutants nothing noticed.
 
-usage: mutate.py --work DIR [--count N] [--seed S] [--files src/tc.ml src/level.ml ...]
+usage: mutate.py --work DIR [--count N] [--seed S] [--files src/tc.ml src/level.ml ...] [--allow tools/mutation_equivalents.json]
 
 DIR is a scratch copy of the repository (it is rewritten). A mutant is KILLED when the build still succeeds and some test
 fails, UNVIABLE when it does not build, SURVIVED otherwise. Survivors are the test suite's blind spots: each one is either
-an equivalent mutant or a missing test.
+an equivalent mutant or a missing test. With --allow, a survivor listed there (same file, same source line, same
+replacement, with the reason it changes nothing observable) is not a failure; any other survivor makes the exit code 1.
 """
 
 import argparse
@@ -66,6 +67,7 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--files", nargs="*", default=["src/tc.ml", "src/level.ml", "src/ind.ml", "src/quot.ml"])
     ap.add_argument("--out", default="mutants.json")
+    ap.add_argument("--allow", default=None, help="JSON list of known equivalent mutants")
     args = ap.parse_args()
     work = pathlib.Path(args.work)
     cands = []
@@ -98,20 +100,35 @@ def main():
                     )
                     killed = forge.returncode != 0
                 if not killed:
-                    unit = sh("dune test 2>&1 | tail -3", work, timeout=600)
-                    killed = "FAIL" in unit.stdout or "rror" in unit.stdout
+                    unit = sh("dune test --force", work, timeout=600)
+                    killed = unit.returncode != 0
                 status = "killed" if killed else "survived"
         except subprocess.TimeoutExpired:
             status = "killed"  # a mutant that hangs the tests is noticed
         finally:
             p.write_text(original, encoding="utf-8")
-        rec = {"file": str(p.relative_to(work)), "line": lineno, "from": original[a:b], "to": rep, "status": status}
+        context = original.splitlines()[lineno - 1].strip()
+        rec = {
+            "file": str(p.relative_to(work)),
+            "line": lineno,
+            "context": context,
+            "from": original[a:b],
+            "to": rep,
+            "status": status,
+        }
         results.append(rec)
         print(json.dumps(rec), flush=True)
     summary = {s: sum(1 for r in results if r["status"] == s) for s in ("killed", "survived", "unviable")}
     pathlib.Path(args.out).write_text(json.dumps({"summary": summary, "mutants": results}, indent=1), encoding="utf-8")
     print(json.dumps(summary))
-    return 0
+    allowed = json.loads(pathlib.Path(args.allow).read_text(encoding="utf-8")) if args.allow else []
+    known = {(a["file"], a["context"], a["from"], a["to"]) for a in allowed}
+    new = [
+        r for r in results if r["status"] == "survived" and (r["file"], r["context"], r["from"], r["to"]) not in known
+    ]
+    for r in new:
+        print(f"SURVIVOR not in the allow list: {r['file']}:{r['line']}  {r['context']}   [{r['from']} -> {r['to']}]")
+    return 1 if new else 0
 
 
 if __name__ == "__main__":

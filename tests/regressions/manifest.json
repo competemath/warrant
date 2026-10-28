@@ -120,6 +120,23 @@
    "msg": "the type differs from the derivation"
   },
   {
+   "path": "nested-parametric-tree.ndjson",
+   "expect": "accept",
+   "why": "T (a : Type) := mk (List (T a)): a nested inductive with a parameter, with its two recursors written by hand. The auxiliary type, its recursor and the rebuilding of the derived terms over the parameter are exercised only by a nested type that has one (Lean.Syntax has none): a mutation that rebuilt a lambda over the parameters as a Pi survived every other test."
+  },
+  {
+   "path": "mutual-prop-large-elimination.ndjson",
+   "expect": "reject",
+   "why": "A and B are two empty propositions declared together, with recursors claimed to eliminate into every Sort. A single empty proposition may (False does); a mutual block of propositions eliminates into Prop only. A mutation that allowed large elimination for mutual blocks accepted the claim.",
+   "msg": "universe parameters differ from the derivation"
+  },
+  {
+   "path": "string-of-list-wrong-type.ndjson",
+   "expect": "reject",
+   "why": "String.ofList is an axiom Nat -> String here and the file compares the literal \"a\" with String.ofList 5. A literal expands through the file's own String.ofList only when it has type List Char -> String (there is no String.mk here either), so the comparison has no meaning and is refused for that reason; a mutation that accepted the constant when either its universe parameters or its type fit expanded the literal anyway and failed later, for another reason.",
+   "msg": "string literal: the environment has no String.ofList or String.mk of type List Char -> String"
+  },
+  {
    "path": "mutual-different-parameters.ndjson",
    "expect": "reject",
    "why": "A and B are declared together but A takes a parameter of type Sort 1 and B one of type Sort 0. All types of a mutual block share their parameters; a mutation that inverted the comparison accepted exactly this.",
@@ -146,6 +163,11 @@
    "path": "init-char-ofordinal-proof3.ndjson.gz",
    "expect": "accept",
    "why": "Init (toolchain 4.34.0-rc2) never finished this: a `grind` certificate check compares `Bool.true` with `Nat.beq 4293853185 (natAbs (leadCoeff p) * 4294965248 - 1112063)` where p is a let-bound variable. The comparison peeled the literal one successor at a time because the term has a free variable; a variable whose value is closed now counts as closed for the arithmetic shortcut. Also: reduce_nat has no free-variable guard (the kernel has none). Cut with: tools/slice.py init.ndjson out.ndjson _private.Init.Data.Char.Ordinal.0.Char.ofOrdinal._proof_3"
+  },
+  {
+   "path": "init-lean-syntax-nested.ndjson.gz",
+   "expect": "accept",
+   "why": "Lean.Syntax is the one nested inductive in Init (it contains Array Syntax, which contains List Syntax): the auxiliary types, their recursors and the restoring of the derived terms are exercised by nothing else in the quick tests (found by mutation testing: swapping the restore of a lambda for a Pi survived). Cut with: tools/slice.py init.ndjson out.ndjson Lean.Syntax"
   }
  ]
 }

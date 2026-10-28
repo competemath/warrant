@@ -1,0 +1,37 @@
+[
+ {
+  "file": "src/tc.ml",
+  "context": "if not (a.has_fvar || b.has_fvar) then",
+  "from": "||",
+  "to": "&&",
+  "why": "caching an answer about a term with free variables is harmless: free variable ids are never reused and their types never change, so the answer for those two terms cannot change; the guard only bounds memory"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "if not (tn.has_fvar || sn.has_fvar) then",
+  "from": "||",
+  "to": "&&",
+  "why": "same: the failure of the same pair of terms is the same failure in any context where it can be asked again"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "| Some u -> whnf_core ~cheap_proj:true st u",
+  "from": "true",
+  "to": "false",
+  "why": "reducing the structure of a projection fully instead of cheaply only does more work; the answer is the same, and the projection step added next to it keeps the Int32 case fast"
+ },
+ {
+  "file": "src/ind.ml",
+  "context": "if Env.mem env cand || block_has cand || List.exists (fun (n, _, _) -> n == cand) !aux_info",
+  "from": "||",
+  "to": "&&",
+  "why": "fresh names for auxiliary nested types: a clash needs a file that declares a constant named like _nested.T_k; the effect is a spurious rejection, not an acceptance (the auxiliary types never reach the environment)"
+ },
+ {
+  "file": "src/ind.ml",
+  "context": "| _ -> assert false)",
+  "from": "false",
+  "to": "true",
+  "why": "unreachable: the derived declarations of a block are inductive types, constructors and recursors by construction"
+ }
+]

@@ -224,6 +224,12 @@ NAT = ("const", "Nat", [])
 EQ_NAT = ("app", ("const", "Eq", [ONE]), NAT)
 
 
+def _app(f, *args):
+    for a in args:
+        f = ("app", f, a)
+    return f
+
+
 def eq_nat(a, b):
     return ("app", ("app", EQ_NAT, a), b)
 
@@ -391,6 +397,179 @@ add(
     msg="the type differs from the derivation",
 )
 
+
+# ---- a hand-written parametric nested inductive: T (a : Type) := mk (List (T a)) ----
+def db(t, env):
+    """Terms with named variables: ("var", n), ("pin", n, ty, body), ("lamn", n, ty, body) -> de Bruijn terms."""
+    k = t[0]
+    if k == "var":
+        return ("bvar", len(env) - 1 - max(i for i, x in enumerate(env) if x == t[1]))
+    if k in ("pin", "lamn"):
+        return ("pi" if k == "pin" else "lam", db(t[2], env), db(t[3], env + [t[1]]))
+    if k == "app":
+        return ("app", db(t[1], env), db(t[2], env))
+    return t
+
+
+def tele(kind, binders, body):
+    for n, ty in reversed(binders):
+        body = (kind, n, ty, body)
+    return body
+
+
+def V(n):
+    return ("var", n)
+
+
+def build_nested_param_tree(b, rec_universe="u"):
+    ty0 = ("sort", ONE)
+    u = ("param", rec_universe)
+    ListC = lambda *a: _app(("const", "List", [0]), *a)  # noqa: E731
+    Tt = lambda a: _app(("const", "T", []), a)  # noqa: E731
+    nil = _app(("const", "List.nil", [0]), Tt(V("a")))
+    cons = lambda h, tl: _app(("const", "List.cons", [0]), Tt(V("a")), h, tl)  # noqa: E731
+    mk = lambda lst: _app(("const", "T.mk", []), V("a"), lst)  # noqa: E731
+    m1t = tele("pin", [("t", Tt(V("a")))], ("sort", u))
+    m2t = tele("pin", [("l", ListC(Tt(V("a"))))], ("sort", u))
+    mk_minor = tele("pin", [("x", ListC(Tt(V("a")))), ("ih", _app(V("m2"), V("x")))], _app(V("m1"), mk(V("x"))))
+    nil_minor = _app(V("m2"), nil)
+    cons_minor = tele(
+        "pin",
+        [("h", Tt(V("a"))), ("tl", ListC(Tt(V("a")))), ("ih1", _app(V("m1"), V("h"))), ("ih2", _app(V("m2"), V("tl")))],
+        _app(V("m2"), cons(V("h"), V("tl"))),
+    )
+    head = [("a", ty0), ("m1", m1t), ("m2", m2t), ("mk", mk_minor), ("nil", nil_minor), ("cons", cons_minor)]
+    rec_ty = tele("pin", head + [("t", Tt(V("a")))], _app(V("m1"), V("t")))
+    rec1_ty = tele("pin", head + [("t", ListC(Tt(V("a"))))], _app(V("m2"), V("t")))
+    args = [V(n) for n, _ in head]
+    rec0 = lambda *x: _app(("const", "T.rec", [u]), *args, *x)  # noqa: E731
+    rec1 = lambda *x: _app(("const", "T.rec_1", [u]), *args, *x)  # noqa: E731
+    rule_mk = tele("lamn", head + [("x", ListC(Tt(V("a"))))], _app(V("mk"), V("x"), rec1(V("x"))))
+    rule_nil = tele("lamn", head, V("nil"))
+    rule_cons = tele(
+        "lamn",
+        head + [("h", Tt(V("a"))), ("tl", ListC(Tt(V("a"))))],
+        _app(V("cons"), V("h"), V("tl"), rec0(V("h")), rec1(V("tl"))),
+    )
+    b.inductive(
+        [
+            {
+                "name": "T",
+                "type": db(tele("pin", [("a", ty0)], ty0), []),
+                "num_params": 1,
+                "ctors": ["T.mk"],
+                "is_rec": True,
+                "num_nested": 1,
+            }
+        ],
+        [
+            {
+                "name": "T.mk",
+                "induct": "T",
+                "type": db(tele("pin", [("a", ty0), ("l", ListC(Tt(V("a"))))], Tt(V("a"))), []),
+                "cidx": 0,
+                "num_params": 1,
+                "num_fields": 1,
+            }
+        ],
+        [
+            {
+                "name": "T.rec",
+                "lparams": [rec_universe],
+                "type": db(rec_ty, []),
+                "num_params": 1,
+                "num_motives": 2,
+                "num_minors": 3,
+                "rules": [("T.mk", 1, db(rule_mk, []))],
+            },
+            {
+                "name": "T.rec_1",
+                "lparams": [rec_universe],
+                "type": db(rec1_ty, []),
+                "num_params": 1,
+                "num_motives": 2,
+                "num_minors": 3,
+                "rules": [("List.nil", 0, db(rule_nil, [])), ("List.cons", 2, db(rule_cons, []))],
+            },
+        ],
+    )
+
+
+b = base("Nat", "List", "List.nil", "List.cons")
+build_nested_param_tree(b)
+add(
+    "nested-parametric-tree.ndjson",
+    b.text(),
+    "accept",
+    "T (a : Type) := mk (List (T a)): a nested inductive with a parameter, with its two recursors written by hand. The auxiliary "
+    "type, its recursor and the rebuilding of the derived terms over the parameter are exercised only by a nested type that has "
+    "one (Lean.Syntax has none): a mutation that rebuilt a lambda over the parameters as a Pi survived every other test.",
+)
+
+
+# a mutual block of propositions eliminates into Prop only
+PROP = ("sort", 0)
+A = ("const", "A", [])
+B = ("const", "B", [])
+b = Builder()
+mt1 = ("pi", A, ("sort", ("param", "u")))
+mt2 = ("pi", B, ("sort", ("param", "u")))
+b.inductive(
+    [{"name": "A", "type": PROP, "num_params": 0}, {"name": "B", "type": PROP, "num_params": 0}],
+    [],
+    [
+        {
+            "name": "A.rec",
+            "lparams": ["u"],
+            "type": ("pi", mt1, ("pi", mt2, ("pi", A, ("app", ("bvar", 2), ("bvar", 0))))),
+            "num_params": 0,
+            "num_motives": 2,
+            "num_minors": 0,
+            "rules": [],
+        },
+        {
+            "name": "B.rec",
+            "lparams": ["u"],
+            "type": ("pi", mt1, ("pi", mt2, ("pi", B, ("app", ("bvar", 1), ("bvar", 0))))),
+            "num_params": 0,
+            "num_motives": 2,
+            "num_minors": 0,
+            "rules": [],
+        },
+    ],
+)
+add(
+    "mutual-prop-large-elimination.ndjson",
+    b.text(),
+    "reject",
+    "A and B are two empty propositions declared together, with recursors claimed to eliminate into every Sort. A single empty "
+    "proposition may (False does); a mutual block of propositions eliminates into Prop only. A mutation that allowed large "
+    "elimination for mutual blocks accepted the claim.",
+    msg="universe parameters differ from the derivation",
+)
+
+# a string literal expands through String.ofList only if that has the type List Char -> String
+b = base("String", "Char", "Nat", "List", "Eq", "Eq.refl")
+b.axiom("String.ofList", [], ("pi", NAT, ("const", "String", [])))
+b.theorem(
+    "t",
+    [],
+    _app(
+        ("const", "Eq", [ONE]), ("const", "String", []), ("str", "a"), _app(("const", "String.ofList", []), ("nat", 5))
+    ),
+    _app(("const", "Eq.refl", [ONE]), ("const", "String", []), ("str", "a")),
+)
+add(
+    "string-of-list-wrong-type.ndjson",
+    b.text(),
+    "reject",
+    'String.ofList is an axiom Nat -> String here and the file compares the literal "a" with String.ofList 5. A literal expands '
+    "through the file's own String.ofList only when it has type List Char -> String (there is no String.mk here either), so the "
+    "comparison has no meaning and is refused for that reason; a mutation that accepted the constant when either its universe "
+    "parameters or its type fit expanded the literal anyway and failed later, for another reason.",
+    msg="string literal: the environment has no String.ofList or String.mk of type List Char -> String",
+)
+
 # a mutual block whose types take different parameters
 b = Builder()
 b.inductive(
@@ -439,6 +618,13 @@ for path, decl, why in [
         "comparison peeled the literal one successor at a time because the term has a free variable; a variable whose "
         "value is closed now counts as closed for the arithmetic shortcut. Also: reduce_nat has no free-variable "
         "guard (the kernel has none).",
+    ),
+    (
+        "init-lean-syntax-nested.ndjson.gz",
+        "Lean.Syntax",
+        "Lean.Syntax is the one nested inductive in Init (it contains Array Syntax, which contains List Syntax): the "
+        "auxiliary types, their recursors and the restoring of the derived terms are exercised by nothing else in the "
+        "quick tests (found by mutation testing: swapping the restore of a lambda for a Pi survived).",
     ),
 ]:
     files.append({"path": path, "expect": "accept", "why": why + " Cut with: " + SLICE + decl})

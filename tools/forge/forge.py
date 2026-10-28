@@ -8,6 +8,10 @@ Generators (each states the verdict it knows, and the oracle is independent of t
   prop     a theorem about a universe-polymorphic statement; accepted iff its sort is zero under every valuation
   stlc     simply typed terms over axioms with beta, delta, zeta and eta; accepted iff the normal forms agree
   nat      arithmetic on random literals, with the right and with a wrong result (needs --prelude)
+  natterm  equalities between random closed Nat terms (succ, add, mul, literals), true or false by evaluation
+  pirrel   two axioms of one random proposition are equal (proof irrelevance); two axioms of Nat are not
+  eta      structure eta on nested pairs: p = (p.1, p.2) holds, a swapped or mismatched pair does not
+  quot     Quot.lift f h (Quot.mk r a) computes to f a, claimed right and wrong
   tamper   a valid inductive file with one claimed field changed; the claim is rederived, so it must be rejected
   corrupt  a valid file with a line deleted, duplicated or mangled; any verdict but a crash or an accept of
            something the original did not prove is fine, so it is checked only for crashes and for acceptance of
@@ -28,7 +32,9 @@ import tempfile
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from ndjson import Builder  # noqa: E402
+from slice import slice_lines  # noqa: E402
 
 PARAMS = ["u", "v", "w"]
 
@@ -389,6 +395,14 @@ def generate(g, rng, c, prelude, sources):
             return gen_tamper(rng, rng.choice(sources))
         if g == "nat":
             return gen_nat_with_prelude(rng, c, prelude)
+        if g == "natterm":
+            return gen_natterm(rng, c, prelude)
+        if g == "pirrel":
+            return gen_pirrel(rng, c, prelude)
+        if g == "eta":
+            return gen_eta(rng, c, prelude)
+        if g == "quot":
+            return gen_quot(rng, c, prelude)
     except (TooBig, RecursionError):
         return None
     finally:
@@ -421,7 +435,11 @@ def main():
         while time.time() < deadline and rnd < args.rounds:
             rnd += 1
             c = 1 + rnd // 3  # complexity grows with the round
-            gens = ["levels", "prop", "stlc"] + (["tamper"] if sources else []) + (["nat"] if prelude else [])
+            gens = (
+                ["levels", "prop", "stlc"]
+                + (["tamper"] if sources else [])
+                + (["nat", "natterm", "pirrel", "eta", "quot"] if prelude else [])
+            )
             for g in gens:
                 if time.time() >= deadline:
                     break
@@ -550,6 +568,145 @@ def nat_claim(prelude, op, x, y, claimed, wrong):
     )
     expect = "reject" if wrong else "accept"
     return "\n".join(prelude + out) + "\n", expect, f"{op} {x} {y} -> {claimed}"
+
+
+_BASES = {}
+
+
+def prelude_base(prelude, names):
+    """A fresh Builder on the part of the prelude that [names] need (the cut is cached)."""
+    key = tuple(names)
+    if key not in _BASES:
+        _BASES[key] = slice_lines(prelude, names)
+    return Builder.extending(_BASES[key])
+
+
+ONE = ("succ", 0)
+NAT = ("const", "Nat", [])
+
+
+def _app(f, *args):
+    for a in args:
+        f = ("app", f, a)
+    return f
+
+
+def _eq(level, ty, a, b):
+    return _app(("const", "Eq", [level]), ty, a, b)
+
+
+def _refl(level, ty, a):
+    return _app(("const", "Eq.refl", [level]), ty, a)
+
+
+def rand_nat_term(rng, depth):
+    """(term, value): a closed Nat term and what it evaluates to; the size of the value stays small."""
+    if depth == 0 or rng.random() < 0.3:
+        v = rng.randrange(0, 30)
+        return ("nat", v), v
+    k = rng.choice(["succ", "add", "mul", "zero"])
+    if k == "zero":
+        return ("const", "Nat.zero", []), 0
+    if k == "succ":
+        t, v = rand_nat_term(rng, depth - 1)
+        return _app(("const", "Nat.succ", []), t), v + 1
+    a, va = rand_nat_term(rng, depth - 1)
+    b, vb = rand_nat_term(rng, depth - 1)
+    if k == "add":
+        return _app(("const", "Nat.add", []), a, b), va + vb
+    return _app(("const", "Nat.mul", []), a, b), va * vb
+
+
+def gen_natterm(rng, c, prelude):
+    """`a = b := Eq.refl a` for random closed Nat terms; b is a random term with the same value or a different one."""
+    b = prelude_base(prelude, ["Nat", "Nat.succ", "Nat.zero", "Nat.add", "Nat.mul", "Eq", "Eq.refl"])
+    a, va = rand_nat_term(rng, 1 + c)
+    if rng.random() < 0.5:
+        for _ in range(40):
+            t, vt = rand_nat_term(rng, 1 + c)
+            if vt == va:
+                break
+        else:
+            t, vt = ("nat", va), va
+        right = True
+    else:
+        t, vt = rand_nat_term(rng, 1 + c)
+        right = vt == va
+    b.theorem("forge_natterm", [], _eq(ONE, NAT, a, t), _refl(ONE, NAT, a))
+    return b.text(), "accept" if right else "reject", f"{va} vs {vt}"
+
+
+def rand_prop(rng, depth):
+    if depth == 0 or rng.random() < 0.3:
+        return rng.choice([("const", "True", []), ("const", "False", [])])
+    if rng.random() < 0.6:
+        return _app(("const", "And", []), rand_prop(rng, depth - 1), rand_prop(rng, depth - 1))
+    return _app(("const", "Or", []), rand_prop(rng, depth - 1), rand_prop(rng, depth - 1))
+
+
+def gen_pirrel(rng, c, prelude):
+    """Two axioms h1 h2 : P for a proposition P are equal by Eq.refl; two axioms x y : Nat are not."""
+    b = prelude_base(prelude, ["Nat", "True", "False", "And", "Or", "Eq", "Eq.refl"])
+    if rng.random() < 0.6:
+        prop = rand_prop(rng, 1 + c)
+        b.axiom("h1", [], prop)
+        b.axiom("h2", [], prop)
+        b.theorem(
+            "forge_pirrel",
+            [],
+            _eq(0, prop, ("const", "h1", []), ("const", "h2", [])),
+            _refl(0, prop, ("const", "h1", [])),
+        )
+        return b.text(), "accept", "proofs of one proposition"
+    b.axiom("x", [], NAT)
+    b.axiom("y", [], NAT)
+    b.theorem(
+        "forge_pirrel", [], _eq(ONE, NAT, ("const", "x", []), ("const", "y", [])), _refl(ONE, NAT, ("const", "x", []))
+    )
+    return b.text(), "reject", "two natural numbers"
+
+
+def gen_eta(rng, c, prelude):
+    """p : Prod (Prod Nat Nat) Nat (nested to a random depth): rebuilding p from its projections is p, swapping is not."""
+    b = prelude_base(prelude, ["Nat", "Prod", "Prod.mk", "Eq", "Eq.refl"])
+    depth = 1 + rng.randrange(min(c, 4))
+
+    def ty(d):
+        return NAT if d == 0 else _app(("const", "Prod", [0, 0]), ty(d - 1), ty(d - 1))
+
+    def rebuild(t, d, swap):
+        """Prod.mk (t.1) (t.2) at every level of nesting, with the two components swapped at the top when swap."""
+        if d == 0:
+            return t
+        f = ("proj", "Prod", 0, t)
+        sn = ("proj", "Prod", 1, t)
+        left, right = rebuild(f, d - 1, False), rebuild(sn, d - 1, False)
+        if swap:
+            left, right = right, left
+        return _app(("const", "Prod.mk", [0, 0]), ty(d - 1), ty(d - 1), left, right)
+
+    t = ty(depth)
+    b.axiom("p", [], t)
+    p = ("const", "p", [])
+    swap = rng.random() < 0.5
+    b.theorem("forge_eta", [], _eq(ONE, t, p, rebuild(p, depth, swap)), _refl(ONE, t, p))
+    return b.text(), "reject" if swap else "accept", f"depth {depth}, swapped {swap}"
+
+
+def gen_quot(rng, c, prelude):
+    """Quot.lift (fun _ => k) _ (Quot.mk (fun _ _ => True) a) = claimed, with claimed = k or not."""
+    b = prelude_base(prelude, ["Nat", "True", "Eq", "Eq.refl", "Quot", "Quot.mk", "Quot.lift"])
+    k = rng.randrange(0, 10**c)
+    a = rng.randrange(0, 10**c)
+    wrong = rng.random() < 0.5
+    claimed = k + rng.choice([1, 2, 5]) if wrong else k
+    rel = ("lam", NAT, ("lam", NAT, ("const", "True", [])))
+    f = ("lam", NAT, ("nat", k))
+    h = ("lam", NAT, ("lam", NAT, ("lam", _app(rel, ("bvar", 1), ("bvar", 0)), _refl(ONE, NAT, ("nat", k)))))
+    mk = _app(("const", "Quot.mk", [ONE]), NAT, rel, ("nat", a))
+    lift = _app(("const", "Quot.lift", [ONE, ONE]), NAT, rel, NAT, f, h, mk)
+    b.theorem("forge_quot", [], _eq(ONE, NAT, lift, ("nat", claimed)), _refl(ONE, NAT, ("nat", k)))
+    return b.text(), "reject" if wrong else "accept", f"lift (const {k}) (mk {a}) = {claimed}"
 
 
 if __name__ == "__main__":
