@@ -1,0 +1,49 @@
+# The forge (tools/forge): random export files whose outcome is known by construction, in rounds of growing size and
+# nesting, run against the kernel for longer than a pull request can afford. A wrong verdict or a crash fails the run
+# and uploads the offending file; the fix lands with that file copied into tests/arena/forge as a regression test.
+# Pull requests run a short round of the same generators (test/forge_test.ml, via dune test).
+name: forge
+on:
+  schedule:
+    - cron: "23 4 * * 2"   # Tuesdays
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: "Wall-clock budget for the round"
+        required: false
+        default: "1200"
+permissions: {}
+concurrency:
+  group: forge
+  cancel-in-progress: false
+jobs:
+  round:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions: { contents: read }
+    steps:
+      - uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
+        with: { egress-policy: audit }
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: ocaml/setup-ocaml@ff66428f72b64472e749b22e0ad4dded4b2ddca6 # v3.9.1
+        with:
+          ocaml-compiler: "5.3"
+          dune-cache: true
+      - run: opam install . --deps-only --yes && opam exec -- dune build @all
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with: { python-version: "3.12" }
+      - name: Round
+        env: { SECONDS_BUDGET: "${{ inputs.seconds || '1200' }}" }
+        run: |
+          python3 tools/forge/forge.py --binary _build/default/bin/main.exe --seconds "$SECONDS_BUDGET" --out "$RUNNER_TEMP/forge" \
+            --prelude tests/arena/good/init-prelude.ndjson \
+            --inductive-sources tests/arena/good/tutorial/044_natDef.ndjson tests/arena/good/tutorial/045_rbTreeDef.ndjson \
+              tests/arena/good/tutorial/069_eqRec.ndjson tests/arena/good/tutorial/121_rTreeRec.ndjson tests/arena/good/tutorial/070_nRec.ndjson \
+              tests/arena/good/tutorial/074_existsRec.ndjson tests/arena/good/tutorial/123_accRecType.ndjson tests/arena/good/tutorial/068_punitRec.ndjson
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: forge-failures
+          path: ${{ runner.temp }}/forge
+          if-no-files-found: ignore

@@ -1,0 +1,82 @@
+{
+ "description": "One file per unexpected behaviour; each is pinned to the check that must fire.",
+ "files": [
+  {
+   "path": "negative-nat-literal.ndjson",
+   "expect": "reject",
+   "why": "Z.of_string accepts a sign and a 0x prefix: a negative natural literal would reach the arithmetic. Literals are digits only.",
+   "msg": "bad natural literal",
+   "may_decline": true
+  },
+  {
+   "path": "hex-nat-literal.ndjson",
+   "expect": "reject",
+   "why": "same, hexadecimal.",
+   "msg": "bad natural literal",
+   "may_decline": true
+  },
+  {
+   "path": "duplicate-key.ndjson",
+   "expect": "reject",
+   "why": "an object with a repeated key is read differently by different tools; refused instead of picking one reading.",
+   "msg": "duplicate key",
+   "may_decline": true
+  },
+  {
+   "path": "negative-bvar.ndjson",
+   "expect": "reject",
+   "why": "a negative de Bruijn index would corrupt the cached loose-variable range.",
+   "msg": "natural number",
+   "may_decline": true
+  },
+  {
+   "path": "negative-projection-index.ndjson",
+   "expect": "reject",
+   "why": "a negative projection index raised Invalid_argument from List.nth, exiting with the runtime's own code 2.",
+   "msg": "natural number",
+   "may_decline": true
+  },
+  {
+   "path": "empty-file.ndjson",
+   "expect": "decline",
+   "why": "an empty file was accepted: with no declarations there is nothing to accept, and no format was declared.",
+   "msg": "empty file"
+  },
+  {
+   "path": "no-meta.ndjson",
+   "expect": "decline",
+   "why": "a file whose first line is not the meta line does not say which format version it is.",
+   "msg": "meta line"
+  },
+  {
+   "path": "nat-pow-too-large-100000000.ndjson",
+   "expect": "decline",
+   "why": "an exponent of a hundred million would build a number of that many bits: the result is refused (a decline), never computed and never guessed.",
+   "msg": "too large"
+  },
+  {
+   "path": "nat-pow-too-large-5000000.ndjson",
+   "expect": "decline",
+   "why": "a base of a hundred bits to a five-million power overruns the size cap: the result is refused (a decline), never computed and never guessed.",
+   "msg": "too large"
+  },
+  {
+   "path": "beta-sort-mismatch.ndjson",
+   "expect": "reject",
+   "why": "Sort 4 is declared to have type (fun x => Sort 1) Prop, which reduces to Sort 1 while Sort 4 : Sort 5. A quick 'different sorts' verdict after reduction must stay a rejection (found by mutation testing: flipping it to 'equal' survived every test).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "safe-uses-unsafe.ndjson",
+   "expect": "reject",
+   "why": "an unsafe or partial constant is recorded with its type only, and no safe declaration can mention it.",
+   "msg": "unsafe or partial"
+  },
+  {
+   "path": "fake-nat-add.ndjson",
+   "expect": "reject",
+   "why": "Nat.add is redefined as fun a b => a, and the file claims Nat.add 123456789 987654321 = 1111111110 by rfl. With the shortcut keyed on the name the kernel would take the sum from GMP and accept; the fingerprint of the redefined constant is not the genuine one, so literals are unfolded through the file's own definition and the claim fails.",
+   "msg": "the value does not have the declared type"
+  }
+ ]
+}

@@ -1,0 +1,1044 @@
+{
+ "description": "Lean Kernel Arena test files (leanprover/lean-kernel-arena, Apache-2.0), expected outcomes from the arena's own manifests: bad = soundness bugs and invalid declarations, good = valid, good/corner-cases = either.",
+ "files": [
+  {
+   "path": "bad/bugs/closure-level-subst.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/constlevels.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/ctor-num-fields.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/eta-ctor-alias.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/forged-quot-ind.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/k-rec-conv.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/large-elim-param.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/large-elim-prop-bool.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/level-imax-leq.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/level-imax-normalization.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/loose-bvar-value.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/nat-rec-k-lie.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/nat-rec-rules.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/nested-name-capture.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/nested-rec-rule-nfields.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/nested-unused-param.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/orphan-rec.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/pi-closure-context.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/proj-non-structure.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/proj-of-imax-prop.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/proj-of-stuck-prop.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/proj-of-subst-prop.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/rec-k-lie.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/rec-missing-ih.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/rec-of-subst-prop.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/bugs/unit-rec-rule.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/other/extra-rec.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/other/nat-lit-add-bad.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/other/orphan-ctor.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/other/proj-of-prop.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/perf/refute-cheap-first.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/perf/refute-cheap-last.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/002_badDef.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/009_forallSortBad.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/010_nonTypeType.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/011_nonTypeAxiom.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/012_nonPropThm.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/014_selfProof.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/019_tut06_bad01.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/046_inductBadNonSort.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/047_inductBadNonSort2.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/048_inductLevelParam.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/049_inductTooFewParams.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/050_inductWrongCtorParams.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/051_inductWrongCtorResParams.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/052_inductWrongCtorResLevel.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/053_inductInIndex.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/054_indNeg.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/056_reduceCtorType.mk.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/057_indNegReducible.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/061_typeWithTooHighTypeField.mk.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/073_BogusRecursor.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/087_projOutOfRange.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/088_projNotStruct.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/090_projProp2.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/092_projProp4.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/093_projProp5.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/094_projProp6.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/096_projIndexData.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/097_projIndexData2.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/100_ruleKbad.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/101_ruleKAcc.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/105_proofIrrelevanceBad.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/111_indexedUnitEta.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/113_indexedStructEta.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/116_funEtaBad.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/117_reflOccLeft.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/118_reflOccInIndex.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/125_accRecNoEta.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/132_dup_defs.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/133_dup_ind_def.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/134_dup_ctor_def.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/135_dup_rec_def.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/136_misnamed_rec_user.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/137_dup_rec_def2.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/138_dup_ctor_rec.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/139_DupConCon.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/140_falseFromUnsafe.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "bad/tutorial/141_falseFromPartial.ndjson",
+   "expect": "reject",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/init-prelude.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena",
+   "may_timeout": true
+  },
+  {
+   "path": "good/corner-cases/proof-param-ok.ndjson",
+   "expect": "either",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/other/level-index-out-of-order.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/other/nat-lit-add.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/other/nat-lit-ble.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/other/nat-lit-sub.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/other/sparse-name-index.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/perf/app-lam.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena",
+   "may_timeout": true
+  },
+  {
+   "path": "good/perf/args-before-unfold.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/perf/beta-ladder.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena",
+   "may_timeout": true
+  },
+  {
+   "path": "good/perf/church-numerals.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/perf/discarded-argument-match.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/perf/discarded-argument.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/perf/folded-constant-first.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/perf/folded-constant-last.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/perf/fueled-chain.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/perf/grind-ring-5.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena",
+   "may_timeout": true
+  },
+  {
+   "path": "good/perf/identical-nesting.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/perf/irrelevance-before-evaluation.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/perf/irrelevance-refutes.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/perf/let-fold.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/perf/let-ladder.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena",
+   "may_timeout": true
+  },
+  {
+   "path": "good/perf/magma-list-deep-n21.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena",
+   "may_timeout": true
+  },
+  {
+   "path": "good/perf/magma-list-deep-n36.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena",
+   "may_timeout": true
+  },
+  {
+   "path": "good/perf/magma-list-pair-n21.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena",
+   "may_timeout": true
+  },
+  {
+   "path": "good/perf/magma-list-pair-n7.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena",
+   "may_timeout": true
+  },
+  {
+   "path": "good/perf/proj-cheap-struct.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/perf/proj-lazy-struct.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/perf/proj-stuck-struct.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/perf/repeated-subproblem.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/perf/shared-subterm.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/perf/shift-cascade.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/perf/unroll-versus-evaluate.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/001_basicDef.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/003_arrowType.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/004_dependentType.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/005_constType.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/006_betaReduction.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/007_betaReduction2.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/008_forallSortWhnf.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/013_thmProof.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/015_levelComp1.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/016_levelComp2.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/017_levelComp3.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/018_levelParams.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/020_levelComp4.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/021_levelComp5.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/022_imax1.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/023_imax2.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/024_levelMaxComm.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/025_levelMaxAssoc.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/026_levelMaxIdem.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/027_levelMaxAbsorb.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/028_inferVar.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/029_defEqLambda.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/030_peano1.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/031_peano2.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/032_peano3.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/033_letType.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/034_letTypeDep.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/035_letRed.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/036_empty.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/037_boolType.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/038_twoBool.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/039_andType.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/040_prodType.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/041_pprodType.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/042_pUnitType.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/043_eqType.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/044_natDef.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/045_rbTreeDef.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/055_reduceCtorParam.mk.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/058_predWithTypeField.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/059_typeWithTypeField.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/060_typeWithTypeFieldPoly.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/062_emptyRec.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/063_boolRec.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/064_twoBoolRec.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/065_andRec.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/066_prodRec.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/067_pprodRec.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/068_punitRec.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/069_eqRec.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/070_nRec.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/071_rbTreeRef.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/072_boolPropRec.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/074_existsRec.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/075_typeSingletonRecReduction.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/076_sortElimPropRec.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/077_sortElimProp2Rec.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/078_boolRecEqns.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/079_prodRecEqns.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/080_nRecReduction.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/081_listRecReduction.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/082_RBTree.id_spec.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/083_And.right.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/084_Prod.snd.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/085_PProd.snd.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/086_PSigma.snd.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/089_projProp1.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/091_projProp3.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/095_projDataIndexRec.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/098_projRed.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/099_ruleK.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/102_aNatLit.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/103_natLitEq.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/104_proofIrrelevance.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/106_proofIrrelevanceWhnf.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/107_proofIrrelevanceUnderBinder.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/108_unitEta1.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/109_unitEta2.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/110_unitEta3.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/112_structEta.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/114_funEta.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/115_funEtaDep.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/119_reduceCtorParamRefl.mk.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/120_reduceCtorParamRefl2.mk.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/121_rTreeRec.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/122_rtreeRecReduction.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/123_accRecType.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/124_accRecReduction.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/126_quotMkType.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/127_quotIndType.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/128_quotLiftType.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/129_quotSoundType.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/130_quotLiftReduction.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  },
+  {
+   "path": "good/tutorial/131_quotIndReduction.ndjson",
+   "expect": "accept",
+   "source": "lean-kernel-arena"
+  }
+ ]
+}
