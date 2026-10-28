@@ -26,6 +26,10 @@ and node =
   | Str of string
   | Proj of Name.t * int * t
 
+val permanently : (unit -> 'a) -> 'a
+(** [permanently f]: terms built while [f] runs are kept for the whole run (the parser uses it for
+    the file's terms). *)
+
 val bvar : int -> t
 val fvar : int -> t
 val sort : Level.t -> t

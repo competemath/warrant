@@ -79,8 +79,9 @@ def main():
         for pat, allowed in RESTRICTED:
             if re.search(pat, text) and rel not in allowed:
                 problems.append(f"{rel}: references {pat}, allowed only in {sorted(allowed)}")
-    for dune in ROOT.rglob("dune"):
-        if "_build" in dune.parts:
+    dunes = [ROOT / d / "dune" for d in ("src", "bin", "test")] + list((ROOT / "tools").glob("*/dune"))
+    for dune in dunes:
+        if not dune.is_file():
             continue
         if re.search(r"-unsafe\b|-unboxed|-nodynlink -unsafe", dune.read_text(encoding="utf-8")):
             problems.append(f"{dune.relative_to(ROOT)}: unsafe compiler flag")
@@ -93,8 +94,8 @@ def main():
             sites += [p.name for _ in re.finditer(rf"Evidence\.Mint\.{fn}\b", text)]
         if sites != [owner]:
             problems.append(f"Mint.{fn}: construction sites {sites}, expected exactly [{owner!r}]")
-    for p in sorted(ROOT.rglob("*.ml")):
-        if "_build" in p.parts or p.name == "evidence.ml" or p.parent.name == "src":
+    for p in sorted(f for d in ("bin", "test", "tools") for f in (ROOT / d).rglob("*.ml")):
+        if p.name == "evidence.ml":
             continue
         if re.search(r"Evidence\.Mint", strip_comments(p.read_text(encoding="utf-8"))):
             problems.append(f"{p.relative_to(ROOT)}: constructs evidence outside src/")

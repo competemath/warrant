@@ -4,7 +4,7 @@ let usage () =
   exit 64
 
 let () =
-  Gc.set { (Gc.get ()) with Gc.space_overhead = 200; minor_heap_size = 8_388_608 };
+  Gc.set { (Gc.get ()) with Gc.space_overhead = 400; minor_heap_size = 8_388_608 };
   let ic =
     match Array.to_list Sys.argv with
     | [ _ ] -> stdin

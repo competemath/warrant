@@ -285,7 +285,7 @@ let line p (s : string) : item =
           let i = to_int i in
           match List.filter (fun (k, _) -> k <> "ie") o with
           | [ (kind, v) ] ->
-              define p.exprs "expression" i (parse_expr p kind v);
+              define p.exprs "expression" i (Expr.permanently (fun () -> parse_expr p kind v));
               Table_entry
           | _ -> malformed "bad expression entry")
       | None, None, None -> (

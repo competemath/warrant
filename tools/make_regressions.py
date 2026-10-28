@@ -162,4 +162,5 @@ with open(os.path.join(OUT, "manifest.json"), "w", encoding="utf-8") as f:
         f,
         indent=1,
     )
+    f.write("\n")
 print(len(files), "regressions")

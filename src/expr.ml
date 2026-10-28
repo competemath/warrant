@@ -54,6 +54,25 @@ module W = Weak.Make (struct
   let hash = shallow_hash
 end)
 
+module S = Hashtbl.Make (struct
+  type nonrec t = t
+
+  let equal = shallow_equal
+  let hash = shallow_hash
+end)
+
+(* Terms the file states live for the whole run and are interned strongly; terms the checker builds on the way
+   (instantiated bodies, derived types) are interned weakly, so the ones nobody refers to any more are collectable. A
+   huge weak table makes every major collection clean it, so the permanent terms are kept out of it. Either way a term
+   has one representative: lookups go through both. *)
+let strong : t S.t = S.create 100_003
+let permanent = ref false
+
+let permanently f =
+  let saved = !permanent in
+  permanent := true;
+  Fun.protect ~finally:(fun () -> permanent := saved) f
+
 let tbl : W.t = W.create 100_003
 let counter = ref 0
 
@@ -73,7 +92,15 @@ let next_id () =
   i
 
 let mk node lbr maxfv has_lparam =
-  W.merge tbl { id = next_id (); node; lbr; has_fvar = maxfv > 0; maxfv; has_lparam }
+  let cand = { id = next_id (); node; lbr; has_fvar = maxfv > 0; maxfv; has_lparam } in
+  match S.find_opt strong cand with
+  | Some e -> e
+  | None ->
+      if !permanent then (
+        let e = match W.find_opt tbl cand with Some e -> e | None -> cand in
+        S.add strong e e;
+        e)
+      else W.merge tbl cand
 
 let bvar i = mk (BVar i) (i + 1) 0 false
 let fvar i = mk (FVar i) 0 i false

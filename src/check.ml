@@ -7,6 +7,9 @@ let trunc s = if String.length s > 700 then String.sub s 0 700 ^ "..." else s
 
 type outcome = Accept | Rejected of string | Declined of string
 
+let progress = Sys.getenv_opt "WARRANT_PROGRESS" <> None
+let announce what name = if progress then Printf.eprintf "%s %s\n%!" what (Name.to_string name)
+
 let admit_item env (item : Parser.item) =
   match item with
   | Parser.Meta | Parser.Table_entry -> ()
@@ -15,6 +18,7 @@ let admit_item env (item : Parser.item) =
       let ev = Tc.check_type st ty in
       if unsafe then Env.add_unsafe env name lparams ev else Env.add_axiom env name lparams ev
   | Parser.Def { name; lparams; ty; value; hints; safe } ->
+      announce "def" name;
       if not safe then
         Env.add_unsafe env name lparams (Tc.check_type (Tc.make ~allow_unsafe:true env lparams) ty)
       else
@@ -55,6 +59,7 @@ let admit_item env (item : Parser.item) =
         in
         Env.add_opaque env name lparams ~ty:ty_ev ~value:val_ev ~conv
   | Parser.Thm { name; lparams; ty; value } ->
+      announce "thm" name;
       let st = Tc.make env lparams in
       let ty_ev = Tc.check_type st ty in
       let prop =
