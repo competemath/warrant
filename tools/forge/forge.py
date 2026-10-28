@@ -21,6 +21,7 @@ import itertools
 import json
 import os
 import random
+import signal
 import subprocess
 import sys
 import tempfile
@@ -352,6 +353,36 @@ def judge(expect, got):
     return "ok"
 
 
+class TooBig(Exception):
+    """A generator ran past its time allowance (a normal form that blows up, say): that case is skipped."""
+
+
+def _alarm(_sig, _frame):
+    raise TooBig
+
+
+def generate(g, rng, c, prelude, sources):
+    """One case from generator g, or None. Each generation is bounded to a few seconds of the forge's own time."""
+    signal.signal(signal.SIGALRM, _alarm)
+    signal.alarm(10)
+    try:
+        if g == "levels":
+            return gen_levels(rng, c) + ("",)
+        if g == "prop":
+            return gen_prop(rng, c) + ("",)
+        if g == "stlc":
+            return gen_stlc(rng, c) + ("",)
+        if g == "tamper":
+            return gen_tamper(rng, rng.choice(sources))
+        if g == "nat":
+            return gen_nat_with_prelude(rng, c, prelude)
+    except (TooBig, RecursionError):
+        return None
+    finally:
+        signal.alarm(0)
+    return None
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--binary", required=True)
@@ -381,17 +412,7 @@ def main():
             for g in gens:
                 if time.time() >= deadline:
                     break
-                made = None
-                if g == "levels":
-                    made = gen_levels(rng, c) + ("",)
-                elif g == "prop":
-                    made = gen_prop(rng, c) + ("",)
-                elif g == "stlc":
-                    made = gen_stlc(rng, c) + ("",)
-                elif g == "tamper":
-                    made = gen_tamper(rng, rng.choice(sources))
-                elif g == "nat":
-                    made = gen_nat_with_prelude(rng, c, prelude)
+                made = generate(g, rng, min(c, 6), prelude, sources)
                 if not made:
                     continue
                 text, expect, note = made

@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 60
     permissions: { contents: read }
     steps:
-      - uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2
+      - uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
         with: { egress-policy: audit }
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false }
@@ -35,8 +35,13 @@ jobs:
         with: { python-version: "3.12" }
       - name: Round
         env: { SECONDS_BUDGET: "${{ inputs.seconds || '1200' }}" }
-        run: python3 tools/forge/forge.py --binary _build/default/bin/main.exe --seconds "$SECONDS_BUDGET" --out "$RUNNER_TEMP/forge"
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        run: |
+          python3 tools/forge/forge.py --binary _build/default/bin/main.exe --seconds "$SECONDS_BUDGET" --out "$RUNNER_TEMP/forge" \
+            --prelude tests/arena/good/init-prelude.ndjson \
+            --inductive-sources tests/arena/good/tutorial/044_natDef.ndjson tests/arena/good/tutorial/045_rbTreeDef.ndjson \
+              tests/arena/good/tutorial/069_eqRec.ndjson tests/arena/good/tutorial/121_rTreeRec.ndjson tests/arena/good/tutorial/070_nRec.ndjson \
+              tests/arena/good/tutorial/074_existsRec.ndjson tests/arena/good/tutorial/123_accRecType.ndjson tests/arena/good/tutorial/068_punitRec.ndjson
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: forge-failures
