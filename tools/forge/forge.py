@@ -80,13 +80,26 @@ def lvl_zero(a):
     )
 
 
+def present(rng, e):
+    """The same term, written as a beta redex, a let, or itself: the checker must see through all three."""
+    k = rng.randrange(4)
+    typ = ("sort", ("succ", 0))
+    if k == 1:
+        return ("app", ("lam", typ, e), ("sort", 0))
+    if k == 2:
+        return ("let", typ, ("sort", 0), e)
+    if k == 3:
+        return ("app", ("lam", typ, ("app", ("lam", typ, e), ("sort", 0))), ("sort", 0))
+    return e
+
+
 def gen_levels(rng, c):
     a, b = rand_level(rng, 1 + c), rand_level(rng, 1 + c)
     if rng.random() < 0.5:  # make equal pairs common: rewrite b into an equivalent form
         b = ("max", a, 0) if rng.random() < 0.5 else ("max", a, a)
     expect = "accept" if lvl_equiv(a, b) else "reject"
     bd = Builder()
-    ty = ("pi", ("sort", a), ("sort", b))
+    ty = ("pi", ("sort", a), present(rng, ("sort", b)))
     val = ("lam", ("sort", a), ("bvar", 0))  # fun T : Sort a => T   : Sort a -> Sort a
     bd.definition("t", PARAMS, ty, val)
     return bd.text(), expect
@@ -455,6 +468,11 @@ def gen_nat_with_prelude(rng, c, prelude):
     right = OPS[op](x, y)
     wrong = rng.random() < 0.5
     claimed = right + rng.choice([1, 2, 7]) if wrong else right
+    return nat_claim(prelude, op, x, y, claimed, wrong)
+
+
+def nat_claim(prelude, op, x, y, claimed, wrong):
+    """prelude + `theorem forge_nat : Nat.op x y = claimed := Eq.refl (Nat.op x y)`; None if the prelude lacks a name."""
     # name/level/expr ids continue after the prelude's
     nn = nl = ne = 0
     names = {}

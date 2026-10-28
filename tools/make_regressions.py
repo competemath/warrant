@@ -71,6 +71,56 @@ add(
     may_decline=True,
 )
 
+add(
+    "empty-file.ndjson",
+    "",
+    "decline",
+    "an empty file was accepted: with no declarations there is nothing to accept, and no format was declared.",
+    msg="empty file",
+)
+add(
+    "no-meta.ndjson",
+    '{"in":1,"str":{"pre":0,"str":"x"}}\n',
+    "decline",
+    "a file whose first line is not the meta line does not say which format version it is.",
+    msg="meta line",
+)
+
+from forge import load_lines, nat_claim  # noqa: E402
+
+PRELUDE = load_lines(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tests", "arena", "good", "init-prelude.ndjson")
+)
+for op, x, y, why in [
+    ("Nat.pow", 2, 100000000, "an exponent of a hundred million would build a number of that many bits"),
+    ("Nat.pow", 10**30, 5000000, "a base of a hundred bits to a five-million power overruns the size cap"),
+]:
+    text, _, _ = nat_claim(PRELUDE, op, x, y, 1, True)
+    add(
+        f"nat-{op.split('.')[1]}-too-large-{y}.ndjson",
+        text,
+        "decline",
+        why + ": the result is refused (a decline), never computed and never guessed.",
+        msg="too large",
+    )
+
+# a type written as a beta redex must still be compared as what it reduces to
+b = Builder()
+b.definition(
+    "d",
+    [],
+    ("app", ("lam", ("sort", ("succ", 0)), ("sort", ("succ", 0))), ("sort", 0)),
+    ("sort", ("succ", ("succ", ("succ", ("succ", 0))))),
+)
+add(
+    "beta-sort-mismatch.ndjson",
+    b.text(),
+    "reject",
+    "Sort 4 is declared to have type (fun x => Sort 1) Prop, which reduces to Sort 1 while Sort 4 : Sort 5. A quick 'different sorts' "
+    "verdict after reduction must stay a rejection (found by mutation testing: flipping it to 'equal' survived every test).",
+    msg="the value does not have the declared type",
+)
+
 # a safe declaration may not mention an unsafe constant
 b = Builder()
 b.axiom("U", [], ("sort", 0), unsafe=True)

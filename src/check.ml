@@ -90,6 +90,7 @@ let run ?(on_decl = fun (_ : int) -> ()) ?(on_env = fun (_ : Env.t) -> ()) (ic :
   let p = Parser.create () in
   let env = Env.create () in
   let count = ref 0 in
+  let seen_meta = ref false in
   try
     (try
        while true do
@@ -97,6 +98,10 @@ let run ?(on_decl = fun (_ : int) -> ()) ?(on_env = fun (_ : Env.t) -> ()) (ic :
          if String.length l > 0 then begin
            Tc.fuel := Tc.default_fuel;
            let item = Parser.line p l in
+           (* the first line must state the format: a file that does not is not an export *)
+           (match item with
+           | Parser.Meta -> if !seen_meta then decline "a second meta line" else seen_meta := true
+           | _ -> if not !seen_meta then decline "the file does not start with the meta line");
            (match item with
            | Parser.Meta | Parser.Table_entry -> ()
            | _ ->
@@ -107,6 +112,7 @@ let run ?(on_decl = fun (_ : int) -> ()) ?(on_env = fun (_ : Env.t) -> ()) (ic :
          end
        done
      with End_of_file -> ());
+    if not !seen_meta then decline "empty file: no meta line";
     on_env env;
     Accept
   with

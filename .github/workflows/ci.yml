@@ -45,7 +45,9 @@ jobs:
         # a file the kernel cannot finish in the time is a decline, never an accept; the manifests say which may time out
         run: python3 tools/arena.py --binary _build/default/bin/main.exe --timeout 120 --quiet tests/arena tests/regressions
       - name: Forge, a short round (random files with verdicts known by construction)
-        run: python3 tools/forge/forge.py --binary _build/default/bin/main.exe --seconds 60 --out "$RUNNER_TEMP/forge" --prelude tests/arena/good/init-prelude.ndjson
+        run: |
+          python3 tools/forge/forge.py --binary _build/default/bin/main.exe --seconds 60 --out "$RUNNER_TEMP/forge" \
+            --prelude tests/arena/good/init-prelude.ndjson --inductive-sources tests/arena/good/tutorial/044_natDef.ndjson tests/arena/good/tutorial/045_rbTreeDef.ndjson tests/arena/good/tutorial/069_eqRec.ndjson tests/arena/good/tutorial/121_rTreeRec.ndjson tests/arena/good/tutorial/070_nRec.ndjson tests/arena/good/tutorial/074_existsRec.ndjson tests/arena/good/tutorial/123_accRecType.ndjson tests/arena/good/tutorial/068_punitRec.ndjson
 
   lint:
     # Formatting of the OCaml (ocamlformat, the version in .ocamlformat), and the pre-commit hooks (JSON/YAML shape,

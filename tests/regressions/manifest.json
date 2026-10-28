@@ -37,6 +37,36 @@
    "may_decline": true
   },
   {
+   "path": "empty-file.ndjson",
+   "expect": "decline",
+   "why": "an empty file was accepted: with no declarations there is nothing to accept, and no format was declared.",
+   "msg": "empty file"
+  },
+  {
+   "path": "no-meta.ndjson",
+   "expect": "decline",
+   "why": "a file whose first line is not the meta line does not say which format version it is.",
+   "msg": "meta line"
+  },
+  {
+   "path": "nat-pow-too-large-100000000.ndjson",
+   "expect": "decline",
+   "why": "an exponent of a hundred million would build a number of that many bits: the result is refused (a decline), never computed and never guessed.",
+   "msg": "too large"
+  },
+  {
+   "path": "nat-pow-too-large-5000000.ndjson",
+   "expect": "decline",
+   "why": "a base of a hundred bits to a five-million power overruns the size cap: the result is refused (a decline), never computed and never guessed.",
+   "msg": "too large"
+  },
+  {
+   "path": "beta-sort-mismatch.ndjson",
+   "expect": "reject",
+   "why": "Sort 4 is declared to have type (fun x => Sort 1) Prop, which reduces to Sort 1 while Sort 4 : Sort 5. A quick 'different sorts' verdict after reduction must stay a rejection (found by mutation testing: flipping it to 'equal' survived every test).",
+   "msg": "the value does not have the declared type"
+  },
+  {
    "path": "safe-uses-unsafe.ndjson",
    "expect": "reject",
    "why": "an unsafe or partial constant is recorded with its type only, and no safe declaration can mention it.",
