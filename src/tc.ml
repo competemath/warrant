@@ -31,6 +31,28 @@ let fresh_fvar ?value ty =
 let local_of id =
   match Hashtbl.find_opt lctx id with Some l -> l | None -> reject "unknown free variable %d" id
 
+(* A term is closed up to let-bound variables when each of its free variables stands for a value that is itself closed
+   up to let-bound variables: unfolding them all gives a closed term. Fvar ids are never reused, so the answer for an id
+   never changes. *)
+let valued : (int, bool) Hashtbl.t = Hashtbl.create 256
+
+let rec closed_modulo_lets (e : E.t) =
+  (not e.has_fvar)
+  || E.for_all_fvars
+       (fun id ->
+         match Hashtbl.find_opt valued id with
+         | Some b -> b
+         | None ->
+             (* a variable under test counts as unvalued while its own value is examined (no value mentions it, but
+                this keeps the recursion total) *)
+             Hashtbl.replace valued id false;
+             let b =
+               match (local_of id).lval with Some v -> closed_modulo_lets v | None -> false
+             in
+             Hashtbl.replace valued id b;
+             b)
+       e
+
 (* A cache for results about terms. A term with free variables is cached under the largest free variable it contains:
    when the binder that introduced that variable is closed, the whole table goes, because no later term can contain it. *)
 type 'a cache = { global : (int, 'a) Hashtbl.t; local : (int, (int, 'a) Hashtbl.t) Hashtbl.t }
@@ -451,33 +473,33 @@ and to_ctor_when_structure st ind_name e =
               | _ -> e)
         | _ -> e)
 
+(* No guard on free variables here: a let-bound variable stands for its (closed) value, and the arguments are reduced
+   with [whnf], which unfolds it. The kernel's [reduce_nat] has none either; its fvar test is in the lazy delta loop. *)
 and reduce_nat st e =
-  if e.has_fvar then None
-  else
-    match e.node with
-    | E.App (f, a) -> (
-        match f.node with
-        | E.Const (n, _) when n == n_nat_succ && nat_ok st -> (
-            match nat_lit_ext st (whnf st a) with Some z -> Some (E.nat (Z.succ z)) | None -> None)
-        | E.Const (n, _) when n == n_nat_log2 && Prim.genuine st.env "Nat.log2" -> (
-            match nat_lit_ext st (whnf st a) with Some z -> Some (E.nat (log2 z)) | None -> None)
-        | E.App (g, a1) -> (
-            match g.node with
-            | E.Const (n, _) -> (
-                match List.assq_opt n nat_binop_tbl with
-                | Some op
-                  when Prim.genuine st.env (Name.to_string n)
-                       &&
-                       match Name.to_string n with
-                       | "Nat.beq" | "Nat.ble" -> Prim.genuine st.env "Bool"
-                       | _ -> true -> (
-                    match (nat_lit_ext st (whnf st a1), nat_lit_ext st (whnf st a)) with
-                    | Some x, Some y -> Some (op x y)
-                    | _ -> None)
-                | _ -> None)
-            | _ -> None)
-        | _ -> None)
-    | _ -> None
+  match e.node with
+  | E.App (f, a) -> (
+      match f.node with
+      | E.Const (n, _) when n == n_nat_succ && nat_ok st -> (
+          match nat_lit_ext st (whnf st a) with Some z -> Some (E.nat (Z.succ z)) | None -> None)
+      | E.Const (n, _) when n == n_nat_log2 && Prim.genuine st.env "Nat.log2" -> (
+          match nat_lit_ext st (whnf st a) with Some z -> Some (E.nat (log2 z)) | None -> None)
+      | E.App (g, a1) -> (
+          match g.node with
+          | E.Const (n, _) -> (
+              match List.assq_opt n nat_binop_tbl with
+              | Some op
+                when Prim.genuine st.env (Name.to_string n)
+                     &&
+                     match Name.to_string n with
+                     | "Nat.beq" | "Nat.ble" -> Prim.genuine st.env "Bool"
+                     | _ -> true -> (
+                  match (nat_lit_ext st (whnf st a1), nat_lit_ext st (whnf st a)) with
+                  | Some x, Some y -> Some (op x y)
+                  | _ -> None)
+              | _ -> None)
+          | _ -> None)
+      | _ -> None)
+  | _ -> None
 
 and whnf st e =
   match e.node with
@@ -838,8 +860,12 @@ and lazy_delta_step st tn sn =
   | `True -> `Done true
   | `False -> `Done false
   | `Unknown -> (
+      (* The kernel tries this only when neither side has a free variable. Here a let-bound variable whose value is closed
+         counts as closed: [Nat.beq lit (e[x := let-bound])] would otherwise be compared by peeling the literal one
+         successor at a time. A term with any other free variable is left alone, as in the kernel: reducing its
+         arguments can force an arithmetic expression over a variable that will never become a literal. *)
       let nat_step =
-        if (not tn.has_fvar) && not sn.has_fvar then
+        if closed_modulo_lets tn && closed_modulo_lets sn then
           match reduce_nat st tn with
           | Some t' -> Some (`Done (is_def_eq_core st t' sn))
           | None -> (

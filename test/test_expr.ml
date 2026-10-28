@@ -46,6 +46,22 @@ let prop_lbr =
   QCheck.Test.make ~count:2000 ~name:"cached lbr is the loose range" arb (fun e ->
       e.lbr = true_lbr e)
 
+(* the free variables the traversal sees are exactly the ones in the term *)
+let rec true_fvars (e : E.t) =
+  match e.node with
+  | E.FVar i -> [ i ]
+  | E.App (a, b) | E.Lam (a, b) | E.Pi (a, b) -> true_fvars a @ true_fvars b
+  | E.Let (t, v, b) -> true_fvars t @ true_fvars v @ true_fvars b
+  | E.Proj (_, _, s) -> true_fvars s
+  | _ -> []
+
+let prop_for_all_fvars =
+  QCheck.Test.make ~count:2000 ~name:"for_all_fvars agrees with the list of free variables" arb
+    (fun e ->
+      let fvs = true_fvars e in
+      List.for_all (fun k -> E.for_all_fvars (fun i -> i <> k) e = not (List.mem k fvs)) [ 1; 2; 3 ]
+      && E.for_all_fvars (fun _ -> false) e = (fvs = []))
+
 (* abstracting then instantiating the same free variables gives the term back *)
 let prop_roundtrip =
   QCheck.Test.make ~count:2000 ~name:"instantiate_rev (abstract e ids) fvars = e"
@@ -74,6 +90,6 @@ let () =
           Alcotest.test_case "binder names" `Quick binder_names_erased;
         ] );
       ( "laws",
-        List.map QCheck_alcotest.to_alcotest [ prop_lbr; prop_roundtrip; prop_instantiate_closed ]
-      );
+        List.map QCheck_alcotest.to_alcotest
+          [ prop_lbr; prop_roundtrip; prop_instantiate_closed; prop_for_all_fvars ] );
     ]

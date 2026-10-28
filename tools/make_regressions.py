@@ -204,17 +204,26 @@ add(
 )
 
 # files cut from an official export with tools/slice.py (kept compressed; arena.py feeds them on standard input)
-files.append(
-    {
-        "path": "init-int32-rxc-hassize.ndjson.gz",
-        "expect": "accept",
-        "why": "Init's _private.Init.Data.Range.Polymorphic.SInt.0.Int32.instRxcHasSize_eq (toolchain 4.34.0-rc2) never "
-        "finished: comparing `Nat.sub A B` with `inst.1 a b` unfolded Nat.sub, which forces whnf of B = a bit-vector "
-        "value mod 2^32 and peels 2^31 successors. The kernel reduces the projection application first "
-        "(type_checker.cpp try_unfold_proj_app). Cut with: tools/slice.py init.ndjson out.ndjson "
+SLICE = "tools/slice.py init.ndjson out.ndjson "
+for path, decl, why in [
+    (
+        "init-int32-rxc-hassize.ndjson.gz",
         "_private.Init.Data.Range.Polymorphic.SInt.0.Int32.instRxcHasSize_eq",
-    }
-)
+        "Init (toolchain 4.34.0-rc2) never finished this: comparing `Nat.sub A B` with `inst.1 a b` unfolded Nat.sub, "
+        "which forces whnf of B = a bit-vector value mod 2^32 and peels 2^31 successors. The kernel reduces the "
+        "projection application first (type_checker.cpp try_unfold_proj_app).",
+    ),
+    (
+        "init-char-ofordinal-proof3.ndjson.gz",
+        "_private.Init.Data.Char.Ordinal.0.Char.ofOrdinal._proof_3",
+        "Init (toolchain 4.34.0-rc2) never finished this: a `grind` certificate check compares `Bool.true` with "
+        "`Nat.beq 4293853185 (natAbs (leadCoeff p) * 4294965248 - 1112063)` where p is a let-bound variable. The "
+        "comparison peeled the literal one successor at a time because the term has a free variable; a variable whose "
+        "value is closed now counts as closed for the arithmetic shortcut. Also: reduce_nat has no free-variable "
+        "guard (the kernel has none).",
+    ),
+]:
+    files.append({"path": path, "expect": "accept", "why": why + " Cut with: " + SLICE + decl})
 
 with open(os.path.join(OUT, "manifest.json"), "w", encoding="utf-8") as f:
     json.dump(

@@ -294,6 +294,24 @@ let consts e =
   go e;
   List.rev !acc
 
+(* [for_all_fvars p e]: every free variable of [e] satisfies [p]. Only subterms with free variables are visited. *)
+let for_all_fvars p e =
+  let seen = Hashtbl.create 16 in
+  let rec go e =
+    if not e.has_fvar then true
+    else if Hashtbl.mem seen e.id then true
+    else begin
+      Hashtbl.add seen e.id ();
+      match e.node with
+      | FVar i -> p i
+      | App (a, b) | Lam (a, b) | Pi (a, b) -> go a && go b
+      | Let (t, v, b) -> go t && go v && go b
+      | Proj (_, _, s) -> go s
+      | BVar _ | Sort _ | Const _ | Nat _ | Str _ -> true
+    end
+  in
+  go e
+
 let exists_const p e =
   let seen = Hashtbl.create 16 in
   let rec go e =
