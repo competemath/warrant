@@ -1177,6 +1177,39 @@
    "msg": "string literal: the environment has no String.ofList or String.mk"
   },
   {
+   "path": "constructor-field-universe-too-large.ndjson",
+   "expect": "reject",
+   "why": "T : Type with T.mk : Type -> T: the field has type Type : Type 1, larger than T's universe. The recursor is claimed as the checker would derive it, so only the universe check can refuse the file (found by mutation testing: the old tests refused such files for the wrong reason).",
+   "msg": "a field lives in a universe larger"
+  },
+  {
+   "path": "inductive-type-ill-typed.ndjson",
+   "expect": "reject",
+   "why": "T : List.{0} (Sort 3) -> Type: List takes a Type 0, and Sort 3 is not one. Only checking the type of T as a type notices; peeling its binders does not (found by mutation testing).",
+   "msg": "application type mismatch"
+  },
+  {
+   "path": "unsafe-opaque-value-not-checked.ndjson",
+   "expect": "accept",
+   "why": "unsafe opaque o : Bool := Nat.zero: the value has the wrong type, and it does not matter, because no safe declaration can use an unsafe constant and the kernel does not run unsafe code. A mutation that took an unsafe opaque for a safe one refused the file (found by mutation testing)."
+  },
+  {
+   "path": "quot-lift-partial-application-eta.ndjson",
+   "expect": "accept",
+   "why": "Quot.lift with five of its six arguments is stuck and equal to its eta-expansion. A mutation that read the sixth argument past the end raised an internal error (a decline) here (found by mutation testing)."
+  },
+  {
+   "path": "quot-eq-two-constructors.ndjson",
+   "expect": "reject",
+   "why": "Eq with the real type and split and a second constructor with the type of Eq.refl: the quotient rules need the real Eq, which has one constructor (found by mutation testing).",
+   "msg": "quotient: Eq is not the expected inductive family"
+  },
+  {
+   "path": "eq-two-constructors-alone.ndjson",
+   "expect": "accept",
+   "why": "the control for the previous file: that Eq on its own is a valid inductive family."
+  },
+  {
    "path": "work-budget-exhausted.ndjson",
    "expect": "decline",
    "why": "the same file as nat-log2-literal, run with a work budget of 10 steps (WARRANT_FUEL): the checker declines and says why. With its normal budget (400 million steps) the file is accepted. A budget can turn an accept into a decline, never a decline into an accept.",

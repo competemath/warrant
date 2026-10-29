@@ -2368,6 +2368,145 @@ add(
     msg="string literal: the environment has no String.ofList or String.mk",
 )
 
+# ---------------------------------------------------------------------------------------------------------------------
+# Mutation round 3j
+
+# a field of a constructor lives in a universe larger than the inductive type's, claims as derived
+b = base("Nat")
+one_field_block(b, ("sort", ONE), ("sort", ONE))
+add(
+    "constructor-field-universe-too-large.ndjson",
+    b.text(),
+    "reject",
+    "T : Type with T.mk : Type -> T: the field has type Type : Type 1, larger than T's universe. The recursor is claimed as the "
+    "checker would derive it, so only the universe check can refuse the file (found by mutation testing: the old tests refused "
+    "such files for the wrong reason).",
+    msg="a field lives in a universe larger",
+)
+
+# the type of an inductive type is itself checked
+b = base("Nat", "List")
+list_of_sort3 = _app(("const", "List", [0]), ("sort", ("succ", ("succ", ("succ", 0)))))
+b.inductive([{"name": "T", "type": ("pi", list_of_sort3, ("sort", ONE)), "num_params": 0, "num_indices": 1}], [], [])
+add(
+    "inductive-type-ill-typed.ndjson",
+    b.text(),
+    "reject",
+    "T : List.{0} (Sort 3) -> Type: List takes a Type 0, and Sort 3 is not one. Only checking the type of T as a type notices; "
+    "peeling its binders does not (found by mutation testing).",
+    msg="application type mismatch",
+)
+
+# an unsafe opaque constant is recorded by its type; its value is not looked at
+b = base("Nat", "Bool", "Bool.true")
+b.opaque("o", [], ("const", "Bool", []), ("const", "Nat.zero", []))
+unsafe_lines = []
+for ln in b.lines:
+    o = json.loads(ln)
+    if "opaque" in o:
+        o["opaque"]["isUnsafe"] = True
+        ln = json.dumps(o, separators=(",", ":"), sort_keys=True)
+    unsafe_lines.append(ln)
+add(
+    "unsafe-opaque-value-not-checked.ndjson",
+    "\n".join(unsafe_lines) + "\n",
+    "accept",
+    "unsafe opaque o : Bool := Nat.zero: the value has the wrong type, and it does not matter, because no safe declaration can use "
+    "an unsafe constant and the kernel does not run unsafe code. A mutation that took an unsafe opaque for a safe one refused the "
+    "file (found by mutation testing).",
+)
+
+# Quot.lift with its quotient argument missing is stuck, not an error
+b = base("Nat", "Eq", "Eq.refl", "Quot", "Quot.mk", "Quot.lift")
+rel_q = ("lam", NAT, ("lam", NAT, _app(("const", "Eq", [ONE]), NAT, ("bvar", 1), ("bvar", 0))))
+quot_nat_q = _app(("const", "Quot", [ONE]), NAT, rel_q)
+h_q = ("lam", NAT, ("lam", NAT, ("lam", _app(rel_q, ("bvar", 1), ("bvar", 0)), ("bvar", 0))))
+partial_lift = _app(("const", "Quot.lift", [ONE, ONE]), NAT, rel_q, NAT, ("lam", NAT, ("bvar", 0)), h_q)
+ty_q = ("pi", quot_nat_q, NAT)
+b.theorem(
+    "t",
+    [],
+    _app(("const", "Eq", [ONE]), ty_q, partial_lift, ("lam", quot_nat_q, ("app", partial_lift, ("bvar", 0)))),
+    _app(("const", "Eq.refl", [ONE]), ty_q, partial_lift),
+)
+add(
+    "quot-lift-partial-application-eta.ndjson",
+    b.text(),
+    "accept",
+    "Quot.lift with five of its six arguments is stuck and equal to its eta-expansion. A mutation that read the sixth argument past "
+    "the end raised an internal error (a decline) here (found by mutation testing).",
+)
+
+# an Eq with two constructors
+rec_3_motive = tele("pin", [("b", V("A")), ("t", EQ_V(V("A"), V("a"), V("b")))], PROP)  # two constructors: Prop only
+minor_3a = _app(V("m"), V("a"), EQ_REFL_V(V("A"), V("a")))
+minor_3b = _app(V("m"), V("a"), _app(("const", "Eq.refl2", [("param", "v")]), V("A"), V("a")))
+head_3 = [("A", SV), ("a", V("A")), ("m", rec_3_motive), ("r", minor_3a), ("r2", minor_3b)]
+b = Builder()
+b.inductive(
+    [
+        {
+            "name": "Eq",
+            "lparams": ["v"],
+            "type": eq_type,
+            "num_params": 2,
+            "num_indices": 1,
+            "ctors": ["Eq.refl", "Eq.refl2"],
+        }
+    ],
+    [
+        {
+            "name": c,
+            "induct": "Eq",
+            "lparams": ["v"],
+            "type": db(
+                tele("pin", [("A", SV), ("a", V("A"))], EQ_V(V("A"), V("a"), V("a"))),
+                [],
+            ),
+            "cidx": i,
+            "num_params": 2,
+            "num_fields": 0,
+        }
+        for i, c in enumerate(["Eq.refl", "Eq.refl2"])
+    ],
+    [
+        {
+            "name": "Eq.rec",
+            "lparams": ["v"],
+            "type": db(
+                tele(
+                    "pin", head_3 + [("b", V("A")), ("t", EQ_V(V("A"), V("a"), V("b")))], _app(V("m"), V("b"), V("t"))
+                ),
+                [],
+            ),
+            "num_params": 2,
+            "num_indices": 1,
+            "num_motives": 1,
+            "num_minors": 2,
+            "rules": [
+                ("Eq.refl", 0, db(tele("lamn", head_3, V("r")), [])),
+                ("Eq.refl2", 0, db(tele("lamn", head_3, V("r2")), [])),
+            ],
+        }
+    ],
+)
+eq_variant_3 = b.text()
+b.quot("type", "Quot", ["u"], QUOT_TY)
+add(
+    "quot-eq-two-constructors.ndjson",
+    b.text(),
+    "reject",
+    "Eq with the real type and split and a second constructor with the type of Eq.refl: the quotient rules need the real Eq, which "
+    "has one constructor (found by mutation testing).",
+    msg="quotient: Eq is not the expected inductive family",
+)
+add(
+    "eq-two-constructors-alone.ndjson",
+    eq_variant_3,
+    "accept",
+    "the control for the previous file: that Eq on its own is a valid inductive family.",
+)
+
 # the checker's own work budget and its caches
 b = Builder.extending(prims)
 b.axiom("T", [], ("pi", NAT, ("sort", ONE)))
