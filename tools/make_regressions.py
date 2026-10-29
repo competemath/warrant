@@ -2088,6 +2088,66 @@ add(
     "arguments into parameters and indices could be changed unnoticed.",
 )
 
+# a mutual block of two propositions, one with a constructor without fields and one empty: no K, small elimination
+A_A = ("const", "A.a", [])
+head_ab = [
+    ("m1", ("pi", A, PROP)),
+    ("m2", ("pi", B, PROP)),
+    ("a", _app(V("m1"), A_A)),
+]
+b = Builder()
+b.inductive(
+    [
+        {"name": "A", "type": PROP, "num_params": 0, "ctors": ["A.a"]},
+        {"name": "B", "type": PROP, "num_params": 0},
+    ],
+    [{"name": "A.a", "induct": "A", "type": A, "cidx": 0, "num_params": 0, "num_fields": 0}],
+    [
+        {
+            "name": "A.rec",
+            "type": db(tele("pin", head_ab + [("t", A)], _app(V("m1"), V("t"))), []),
+            "num_params": 0,
+            "num_motives": 2,
+            "num_minors": 1,
+            "rules": [("A.a", 0, db(tele("lamn", head_ab, V("a")), []))],
+        },
+        {
+            "name": "B.rec",
+            "type": db(tele("pin", head_ab + [("t", B)], _app(V("m2"), V("t"))), []),
+            "num_params": 0,
+            "num_motives": 2,
+            "num_minors": 1,
+            "rules": [],
+        },
+    ],
+)
+add(
+    "mutual-props-no-k.ndjson",
+    b.text(),
+    "accept",
+    "A : Prop with a constructor without fields and B : Prop without constructors, declared together. K-like reduction (the "
+    "recursor treats any proof as the constructor) is for a single proposition with a single constructor without fields; this block "
+    "has one constructor without fields in all and two types. A mutation that dropped the test for a single type gave both "
+    "recursors the K flag and the claim (no K) was refused (found by mutation testing).",
+)
+
+# a key repeated that is not the first key of the object
+add(
+    "duplicate-key-not-first.ndjson",
+    head + '\n{"str":{"pre":0,"str":"x"},"in":1,"in":2}\n',
+    "decline",
+    "the repeated key is the second and third of the object: the check looked for repeats of the first key only (found by mutation "
+    "testing).",
+    msg="duplicate key",
+)
+add(
+    "duplicate-key-nested.ndjson",
+    head + '\n{"in":1,"str":{"pre":0,"str":"x","pre":1}}\n',
+    "decline",
+    "a repeated key inside a nested object.",
+    msg="duplicate key",
+)
+
 # the checker's own work budget and its caches
 b = Builder.extending(prims)
 b.axiom("T", [], ("pi", NAT, ("sort", ONE)))
