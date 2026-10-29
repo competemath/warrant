@@ -23,7 +23,7 @@ _build/default/bin/main.exe file.ndjson     # exit 0 accepted, 1 rejected, 2 dec
 
 `tools/slice.py` cuts the closure of named declarations out of a large export (a 347 MB Init export becomes a 1 MB file
 that still shows one slow declaration); the Init export itself is checked by hand, it is too large for the repository
-(accepted, about fifteen minutes).
+(accepted: 357 s on one core, 4.1 GB resident, toolchain 4.34.0-rc2).
 
 Every unexpected behaviour (a wrong verdict, a crash, a reviewer's finding) gets a test that targets exactly it in
 `tests/regressions` in the pull request that fixes it.
