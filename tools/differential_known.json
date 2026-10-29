@@ -22,5 +22,17 @@
  {
   "file": "literal-without-genuine-nat.ndjson",
   "why": "WARRANT insists that Nat is the genuine inductive type before it types a natural number literal; Lean's kernel types the literal as the constant Nat whatever Nat is"
+ },
+ {
+  "file": "unsafe-axiom-mentions-unsafe.ndjson",
+  "why": "nanoda 0.4.28 does not accept unsafe declarations at all (assertion failed: !is_unsafe in its parser); WARRANT records them as constants no safe declaration may use"
+ },
+ {
+  "file": "unsafe-definition-mentions-unsafe.ndjson",
+  "why": "same: nanoda does not accept unsafe declarations"
+ },
+ {
+  "file": "blank-lines.ndjson",
+  "why": "nanoda reads an empty line as a record and fails; WARRANT skips empty lines (lean4export never writes them)"
  }
 ]
