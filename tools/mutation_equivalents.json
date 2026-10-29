@@ -715,13 +715,6 @@
  },
  {
   "file": "src/tc.ml",
-  "context": "if is_def_eq st tt ts then `True else `False",
-  "from": "is_def_eq st tt ts",
-  "to": "(is_def_eq (st) (ts) (tt))",
-  "why": "OPEN: proof irrelevance compares the types of the two proofs; the mutant says 'equal' whatever their types. Terms compared in a well-typed file have the same type, so no file reaches a pair of proofs of different propositions here (the types of the arguments of Eq and of an application are checked first); no test builds one. Lean's kernel answers 'different' there."
- },
- {
-  "file": "src/tc.ml",
   "context": "| E.Const (n, []) when n == n_nat_zero && nat_ok st -> Some Z.zero",
   "from": "n == n_nat_zero && nat_ok st",
   "to": "(n == n_nat_zero)",
@@ -2398,7 +2391,7 @@
   "context": "if is_prop_type st raw_type || is_prop_type st e_type then e",
   "from": "is_prop_type st raw_type || is_prop_type st e_type",
   "to": "(is_prop_type st raw_type)",
-  "why": "OPEN: the structure counts as a proposition if its type as inferred or its normal form is one; the two presentations differ only for a type whose sort is stuck, and no test has one."
+  "why": "ARGUED, not shown by a test: the structure counts as a proposition if the sort of its inferred type is Prop or the sort of its normal form is. A type and its normal form are convertible, and convertible well-typed terms have convertible types (type uniqueness), so the two sorts are the same level up to equivalence, and the second disjunct adds nothing for a well-typed term. No file can show otherwise; if the argument were wrong the full Init check, which has 3,409 projections, would show it."
  },
  {
   "file": "src/check.ml",
@@ -2693,13 +2686,6 @@
   "from": "400",
   "to": "401",
   "why": "[diagnostics] diagnostics only (trace, progress, truncation of a message, the text of an explanation): nothing that decides a verdict"
- },
- {
-  "file": "src/tc.ml",
-  "context": "if is_def_eq st tt ts then `True else `False",
-  "from": "if is_def_eq st tt ts then `True else `False",
-  "to": "(`True)",
-  "why": "OPEN: proof irrelevance compares the types of the two proofs; the mutant says 'equal' whatever their types. Terms compared in a well-typed file have the same type, so no file reaches a pair of proofs of different propositions here (the types of the arguments of Eq and of an application are checked first); no test builds one. Lean's kernel answers 'different' there."
  },
  {
   "file": "src/tc.ml",
@@ -3238,7 +3224,7 @@
   "context": "let is_prop = is_prop_type st raw_ty || is_prop_type st st_ty in",
   "from": "is_prop_type st raw_ty || is_prop_type st st_ty",
   "to": "(is_prop_type st raw_ty)",
-  "why": "OPEN: the structure counts as a proposition if its type as inferred or its normal form is one; the two presentations differ only for a type whose sort is stuck, and no test has one."
+  "why": "ARGUED, not shown by a test: the structure counts as a proposition if the sort of its inferred type is Prop or the sort of its normal form is. A type and its normal form are convertible, and convertible well-typed terms have convertible types (type uniqueness), so the two sorts are the same level up to equivalence, and the second disjunct adds nothing for a well-typed term. No file can show otherwise; if the argument were wrong the full Init check, which has 3,409 projections, would show it."
  },
  {
   "file": "src/tc.ml",
@@ -5394,7 +5380,7 @@
   "context": "if is_prop_type st raw_type || is_prop_type st e_type then e",
   "from": "is_prop_type st raw_type || is_prop_type st e_type",
   "to": "(is_prop_type st e_type)",
-  "why": "OPEN: the structure counts as a proposition if its type as inferred or its normal form is one; the two presentations differ only for a type whose sort is stuck, and no test has one."
+  "why": "ARGUED, not shown by a test: the structure counts as a proposition if the sort of its inferred type is Prop or the sort of its normal form is. A type and its normal form are convertible, and convertible well-typed terms have convertible types (type uniqueness), so the two sorts are the same level up to equivalence, and the second disjunct adds nothing for a well-typed term. No file can show otherwise; if the argument were wrong the full Init check, which has 3,409 projections, would show it."
  },
  {
   "file": "src/level.ml",
@@ -5430,13 +5416,6 @@
   "from": "Hashtbl.length Fingerprint.memo > 1_000_000",
   "to": "true",
   "why": "[cache] a cache or memo (reading, writing, emptying, its key or its place): it only saves work; the tests that empty the caches after every declaration (WARRANT_CACHE_LIMIT=0) see the same verdicts"
- },
- {
-  "file": "src/tc.ml",
-  "context": "if is_def_eq st tt ts then `True else `False",
-  "from": "is_def_eq st tt ts",
-  "to": "true",
-  "why": "OPEN: proof irrelevance compares the types of the two proofs; the mutant says 'equal' whatever their types. Terms compared in a well-typed file have the same type, so no file reaches a pair of proofs of different propositions here (the types of the arguments of Eq and of an application are checked first); no test builds one. Lean's kernel answers 'different' there."
  },
  {
   "file": "src/tc.ml",

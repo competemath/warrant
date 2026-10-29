@@ -1,6 +1,6 @@
 (tests
- (names test_level test_expr test_prim)
- (modules test_level test_expr test_prim)
+ (names test_level test_expr test_prim test_internal)
+ (modules test_level test_expr test_prim test_internal)
  (libraries warrant alcotest qcheck-core qcheck-alcotest)
  (deps
   (glob_files_rec %{project_root}/tests/arena/**.ndjson)
