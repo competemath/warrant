@@ -2507,6 +2507,60 @@ add(
     "the control for the previous file: that Eq on its own is a valid inductive family.",
 )
 
+# an Eq in Type: the real split and constructor, but a family of types, not of propositions
+eq_type_4 = db(tele("pin", [("A", SV), ("a", V("A")), ("b", V("A"))], ("sort", ONE)), [])
+motive_4 = tele("pin", [("b", V("A")), ("t", EQ_V(V("A"), V("a"), V("b")))], SU)
+minor_4 = _app(V("m"), V("a"), EQ_REFL_V(V("A"), V("a")))
+head_4 = [("A", SV), ("a", V("A")), ("m", motive_4), ("r", minor_4)]
+b = Builder()
+b.inductive(
+    [{"name": "Eq", "lparams": ["v"], "type": eq_type_4, "num_params": 2, "num_indices": 1, "ctors": ["Eq.refl"]}],
+    [
+        {
+            "name": "Eq.refl",
+            "induct": "Eq",
+            "lparams": ["v"],
+            "type": db(tele("pin", [("A", SV), ("a", V("A"))], EQ_V(V("A"), V("a"), V("a"))), []),
+            "cidx": 0,
+            "num_params": 2,
+            "num_fields": 0,
+        }
+    ],
+    [
+        {
+            "name": "Eq.rec",
+            "lparams": ["u", "v"],
+            "type": db(
+                tele(
+                    "pin", head_4 + [("b", V("A")), ("t", EQ_V(V("A"), V("a"), V("b")))], _app(V("m"), V("b"), V("t"))
+                ),
+                [],
+            ),
+            "num_params": 2,
+            "num_indices": 1,
+            "num_motives": 1,
+            "num_minors": 1,
+            "rules": [("Eq.refl", 0, db(tele("lamn", head_4, V("r")), []))],
+        }
+    ],
+)
+eq_variant_4 = b.text()
+b.quot("type", "Quot", ["u"], QUOT_TY)
+add(
+    "quot-eq-in-type.ndjson",
+    b.text(),
+    "reject",
+    "Eq : (A : Sort v) -> A -> A -> Type, with the real constructor and split: a family of types, not of propositions. The "
+    "quotient rules need the type of the real Eq (found by mutation testing: nothing compared it).",
+    msg="quotient: Eq is not the expected inductive family",
+)
+add(
+    "eq-in-type-alone.ndjson",
+    eq_variant_4,
+    "accept",
+    "the control for the previous file: that Eq on its own is a valid inductive family.",
+)
+
 # the checker's own work budget and its caches
 b = Builder.extending(prims)
 b.axiom("T", [], ("pi", NAT, ("sort", ONE)))
