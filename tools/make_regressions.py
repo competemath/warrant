@@ -2931,6 +2931,40 @@ add(
     msg="projection of a proof into a non-proposition",
 )
 
+# A Nat.log2 that is not the genuine one: the file's own definition decides, the shortcut stays off (as for Nat.add). If the shortcut
+# were used here, the kernel would say log2 1000 = 9 while the definition says 5, and the file could prove False.
+for name, claimed, expect, why in [
+    (
+        "fake-nat-log2-definition-decides",
+        5,
+        "accept",
+        "Nat.log2 := fun _ => 5 is the file's own definition, so log2 1000 = 5 holds in this file.",
+    ),
+    (
+        "fake-nat-log2-shortcut-off",
+        9,
+        "reject",
+        "Nat.log2 := fun _ => 5 is the file's own definition: log2 1000 = 9 does not hold in this file, and it is the genuine "
+        "Nat.log2's value. A mutation that used the shortcut for any constant of that name accepted it (found by mutation testing: "
+        "only Nat.add had a negative control).",
+    ),
+]:
+    b = base("Nat", "Eq", "Eq.refl")
+    b.definition("Nat.log2", [], ("pi", NAT, NAT), ("lam", NAT, ("nat", 5)), hints="regular")
+    b.theorem(
+        "t",
+        [],
+        _app(("const", "Eq", [ONE]), NAT, _app(("const", "Nat.log2", []), ("nat", 1000)), ("nat", claimed)),
+        _app(("const", "Eq.refl", [ONE]), NAT, ("nat", claimed)),
+    )
+    add(
+        name + ".ndjson",
+        b.text(),
+        expect,
+        why,
+        msg=DEFEQ_MSG if expect == "reject" else None,
+    )
+
 # the checker's own work budget and its caches
 b = Builder.extending(prims)
 b.axiom("T", [], ("pi", NAT, ("sort", ONE)))

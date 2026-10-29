@@ -1495,6 +1495,17 @@
    "msg": "projection of a proof into a non-proposition"
   },
   {
+   "path": "fake-nat-log2-definition-decides.ndjson",
+   "expect": "accept",
+   "why": "Nat.log2 := fun _ => 5 is the file's own definition, so log2 1000 = 5 holds in this file."
+  },
+  {
+   "path": "fake-nat-log2-shortcut-off.ndjson",
+   "expect": "reject",
+   "why": "Nat.log2 := fun _ => 5 is the file's own definition: log2 1000 = 9 does not hold in this file, and it is the genuine Nat.log2's value. A mutation that used the shortcut for any constant of that name accepted it (found by mutation testing: only Nat.add had a negative control).",
+   "msg": "the value does not have the declared type"
+  },
+  {
    "path": "work-budget-exhausted.ndjson",
    "expect": "decline",
    "why": "the same file as nat-log2-literal, run with a work budget of 10 steps (WARRANT_FUEL): the checker declines and says why. With its normal budget (400 million steps) the file is accepted. A budget can turn an accept into a decline, never a decline into an accept.",
