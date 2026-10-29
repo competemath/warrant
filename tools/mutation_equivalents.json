@@ -166,5 +166,250 @@
   "from": "<",
   "to": "<=",
   "why": "OPEN: matters for a nested occurrence in a container that has indices; no test has one"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "let trace = Sys.getenv_opt \"WARRANT_TRACE\" <> None",
+  "from": "<>",
+  "to": "=",
+  "why": "diagnostics only: the trace switch decides whether failed comparisons are printed"
+ },
+ {
+  "file": "src/check.ml",
+  "context": "let trunc s = if String.length s > 700 then String.sub s 0 700 ^ \"...\" else s",
+  "from": ">",
+  "to": ">=",
+  "why": "diagnostics only: the length at which an explanation is cut"
+ },
+ {
+  "file": "src/check.ml",
+  "context": "let progress = Sys.getenv_opt \"WARRANT_PROGRESS\" <> None",
+  "from": "<>",
+  "to": "=",
+  "why": "diagnostics only: the progress switch decides whether declarations are announced"
+ },
+ {
+  "file": "src/expr.ml",
+  "context": "if e.lbr <= n + off then Some e",
+  "from": "<=",
+  "to": "<",
+  "why": "early exit of instantiate_rev; the walk gives the same term"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "Hashtbl.replace valued id false;",
+  "from": "false",
+  "to": "true",
+  "why": "a variable under test counts as unvalued while its value is examined; no value mentions its own variable, so nothing observable depends on it"
+ },
+ {
+  "file": "src/expr.ml",
+  "context": "let fvar i = mk (FVar i) 0 i false",
+  "from": "false",
+  "to": "true",
+  "why": "the has_lparam flag of a free variable only decides whether instantiating universe parameters walks it; the result is the same term"
+ },
+ {
+  "file": "src/prim.ml",
+  "context": "| None -> false))",
+  "from": "false",
+  "to": "true",
+  "why": "the answer for a name that is not in the digest table / not in the environment: no shortcut asks about such a name (the callers' constants exist and are in the table), so the branch is not reachable from an input"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "| E.FVar a, E.FVar b when a = b -> true",
+  "from": "true",
+  "to": "false",
+  "why": "the same free variable is the same hash-consed term, caught by the physical equality test before"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "| None -> false",
+  "from": "false",
+  "to": "true",
+  "why": "the answer for a name that is not in the digest table / not in the environment: no shortcut asks about such a name (the callers' constants exist and are in the table), so the branch is not reachable from an input"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "if Z.gt b (Z.of_int max_pow) || Z.numbits a + Z.to_int b > max_bits then",
+  "from": "||",
+  "to": "&&",
+  "why": "the size limit on Nat.pow: the two conditions agree wherever the exponent is large enough to matter, and the boundary values are not decided differently by any file that fits in memory"
+ },
+ {
+  "file": "src/expr.ml",
+  "context": "if ps = [] || not e.has_lparam then e",
+  "from": "||",
+  "to": "&&",
+  "why": "early exit of inst_lparams; the walk gives the same term"
+ },
+ {
+  "file": "src/ind.ml",
+  "context": "walk (E.instantiate1 b fv) (i + 1) (fields @ [ (id, fv) ])",
+  "from": "i + 1",
+  "to": "i",
+  "why": "the counter only matters while parameters are being opened; fields come after"
+ },
+ {
+  "file": "src/ind.ml",
+  "context": "| E.Lam (_, b), k when k > 0 -> go b (k - 1)",
+  "from": ">",
+  "to": ">=",
+  "why": "a definition with more lambdas than the annotation's arity is not identity-like either way"
+ },
+ {
+  "file": "src/expr.ml",
+  "context": "{ id = next_id (); node = Str s; lbr = 0; has_fvar = false; maxfv = 0; has_lparam = false }",
+  "from": "false",
+  "to": "true",
+  "why": "has_fvar of a string literal is an optimisation flag: set wrongly, the term is walked and found to have none"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "let params = List.filteri (fun k _ -> k < nparams) (E.get_app_args e_type) in",
+  "from": "<",
+  "to": "<=",
+  "why": "a structure type has no indices, so its arguments are exactly the parameters"
+ },
+ {
+  "file": "src/ind.ml",
+  "context": "let rest = List.filteri (fun i _ -> i >= ji.nparams) args in",
+  "from": ">=",
+  "to": ">",
+  "why": "OPEN: matters for a nested occurrence in a container that has indices; no test has one"
+ },
+ {
+  "file": "src/env.ml",
+  "context": "if conv.a != value.ty || conv.b != ty.e then",
+  "from": "||",
+  "to": "&&",
+  "why": "defensive: evidence is minted for exactly these terms; reaching the branch means the kernel itself is wrong"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "if st.allow_unsafe || not t.safe then",
+  "from": "||",
+  "to": "&&",
+  "why": "defensive: a value is never checked under the unsafe allowance by construction"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "let key = if tn.id <= sn.id then (tn.id, sn.id) else (sn.id, tn.id) in",
+  "from": "<=",
+  "to": "<",
+  "why": "the order of the two ids in a cache key: either order is consistent"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "if size > cache_limit then begin",
+  "from": ">",
+  "to": ">=",
+  "why": "the point at which the caches are emptied: a performance choice"
+ },
+ {
+  "file": "src/ind.ml",
+  "context": "Some (E.mk_app (with_params jas) (List.filteri (fun i _ -> i >= np) args))",
+  "from": ">=",
+  "to": ">",
+  "why": "OPEN: same, for the restoring of such an occurrence"
+ },
+ {
+  "file": "src/prim.ml",
+  "context": "| None -> false",
+  "from": "false",
+  "to": "true",
+  "why": "the answer for a name that is not in the digest table / not in the environment: no shortcut asks about such a name (the callers' constants exist and are in the table), so the branch is not reachable from an input"
+ },
+ {
+  "file": "src/expr.ml",
+  "context": "{ id = next_id (); node = Nat z; lbr = 0; has_fvar = false; maxfv = 0; has_lparam = false }",
+  "from": "false",
+  "to": "true",
+  "why": "has_fvar of a number literal is an optimisation flag: set wrongly, the term is walked and found to have none"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "| E.Lam _, E.Lam _ -> false",
+  "from": "false",
+  "to": "true",
+  "why": "unreachable: two lambdas are decided by the binder comparison before eta is tried"
+ },
+ {
+  "file": "src/expr.ml",
+  "context": "let permanent = ref false",
+  "from": "false",
+  "to": "true",
+  "why": "which table the parser interns terms in; no observable difference"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "if Z.gt b (Z.of_int max_pow) || Z.numbits a + Z.to_int b > max_bits then",
+  "from": ">",
+  "to": ">=",
+  "why": "the size limit on Nat.pow: the two conditions agree wherever the exponent is large enough to matter, and the boundary values are not decided differently by any file that fits in memory"
+ },
+ {
+  "file": "src/expr.ml",
+  "context": "if n = 0 || e.lbr = 0 then e",
+  "from": "||",
+  "to": "&&",
+  "why": "early exit of abstract; the walk gives the same term"
+ },
+ {
+  "file": "src/expr.ml",
+  "context": "(t.has_lparam || v.has_lparam || b.has_lparam)",
+  "from": "||",
+  "to": "&&",
+  "why": "the has_lparam flag is an optimisation: when it is set too eagerly, instantiating universe parameters walks the term and returns it unchanged"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "if String.length s > 400 then String.sub s 0 400 ^ \"\u2026\" else s",
+  "from": ">",
+  "to": ">=",
+  "why": "diagnostics only: the length at which a traced term is cut"
+ },
+ {
+  "file": "src/quot.ml",
+  "context": "|| c.induct != n_eq",
+  "from": "||",
+  "to": "&&",
+  "why": "OPEN: part of the shape check of Eq; see the entry for the line above it"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "if (not r) && trace then begin",
+  "from": "&&",
+  "to": "||",
+  "why": "diagnostics only: whether failed comparisons are printed"
+ },
+ {
+  "file": "src/expr.ml",
+  "context": "| Zero -> false",
+  "from": "false",
+  "to": "true",
+  "why": "level_has_param on Zero: only an optimisation flag of terms"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "| E.App _, E.App _ when d1 == d2 || Name.equal d1.name d2.name -> (",
+  "from": "||",
+  "to": "&&",
+  "why": "two declarations of one name are the same declaration"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "if not (tn.has_fvar || sn.has_fvar) then",
+  "from": "not (",
+  "to": "(",
+  "why": "the failure cache of a pair of terms with free variables: free variable ids are never reused, so an answer cached for them cannot become wrong; the guard only bounds memory"
+ },
+ {
+  "file": "src/expr.ml",
+  "context": "if e.lbr <= i + off then false",
+  "from": "<=",
+  "to": "<",
+  "why": "early exit of has_loose_bvar; the walk finds nothing and gives the same answer"
  }
 ]

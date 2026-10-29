@@ -438,6 +438,18 @@
    "why": "empty lines between records are skipped."
   },
   {
+   "path": "eta-struct-first-field-differs.ndjson",
+   "expect": "reject",
+   "why": "p = (Nat.zero, p.2) or (p.1, Nat.zero) for an unknown pair p: the first field of the rebuilt pair is not the projection. Structure eta compares every field; a mutation that skipped the first one accepted the first form.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "eta-struct-second-field-differs.ndjson",
+   "expect": "reject",
+   "why": "p = (Nat.zero, p.2) or (p.1, Nat.zero) for an unknown pair p: the second field of the rebuilt pair is not the projection. Structure eta compares every field; a mutation that skipped the first one accepted the first form.",
+   "msg": "the value does not have the declared type"
+  },
+  {
    "path": "mutual-different-parameters.ndjson",
    "expect": "reject",
    "why": "A and B are declared together but A takes a parameter of type Sort 1 and B one of type Sort 0. All types of a mutual block share their parameters; a mutation that inverted the comparison accepted exactly this.",

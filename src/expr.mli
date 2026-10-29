@@ -41,7 +41,6 @@ val let_ : t -> t -> t -> t
 val nat : Z.t -> t
 val str : string -> t
 val proj : Name.t -> int -> t -> t
-val equal : t -> t -> bool
 val mk_app : t -> t list -> t
 val get_app_fn : t -> t
 val get_app_args : t -> t list

@@ -1103,6 +1103,24 @@ add(
     "empty lines between records are skipped.",
 )
 
+# structure eta compares every field
+for name, first, second in [("first", "bad", "ok"), ("second", "ok", "bad")]:
+    b = base("Nat", "Nat.zero", "Prod", "Prod.mk", "Eq", "Eq.refl")
+    b.axiom("p", [], prod_nn)
+    p_ = ("const", "p", [])
+    fst, snd = ("proj", "Prod", 0, p_), ("proj", "Prod", 1, p_)
+    rebuilt = _app(
+        ("const", "Prod.mk", [0, 0]), NAT, NAT, N_ZERO if first == "bad" else fst, N_ZERO if second == "bad" else snd
+    )
+    b.theorem("t", [], _app(("const", "Eq", [ONE]), prod_nn, p_, rebuilt), _refl_any(prod_nn, "p"))
+    refuse(
+        f"eta-struct-{name}-field-differs",
+        b.text(),
+        f"p = (Nat.zero, p.2) or (p.1, Nat.zero) for an unknown pair p: the {name} field of the rebuilt pair is not the projection. "
+        "Structure eta compares every field; a mutation that skipped the first one accepted the first form.",
+        "the value does not have the declared type",
+    )
+
 # a mutual block whose types take different parameters
 b = Builder()
 b.inductive(

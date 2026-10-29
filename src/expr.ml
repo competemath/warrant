@@ -153,7 +153,6 @@ let str s =
       e
 
 let proj n i e = mk (Proj (n, i, e)) e.lbr e.maxfv e.has_lparam
-let equal (a : t) (b : t) = a == b
 let mk_app f args = List.fold_left app f args
 let rec get_app_fn e = match e.node with App (f, _) -> get_app_fn f | _ -> e
 
