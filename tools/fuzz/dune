@@ -1,6 +1,8 @@
-; The fuzzer needs bisect_ppx (an opam package that is not a dependency of WARRANT): without it this directory builds nothing.
+; The fuzzer needs bisect_ppx, an opam package that is not a dependency of WARRANT: it is built only in the profile "fuzz"
+;   dune build --profile fuzz --instrument-with bisect_ppx ./tools/fuzz/fuzz.exe
 
 (executable
  (name fuzz)
- (optional)
+ (enabled_if
+  (= %{profile} fuzz))
  (libraries warrant yojson unix bisect_ppx.common bisect_ppx.runtime))

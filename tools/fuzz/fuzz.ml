@@ -1,7 +1,7 @@
 (* A coverage-guided fuzzer for the checker, in one process.
 
    usage (see tools/fuzz/README.md):
-     dune build --instrument-with bisect_ppx ./tools/fuzz/fuzz.exe
+     dune build --profile fuzz --instrument-with bisect_ppx ./tools/fuzz/fuzz.exe
      WARRANT_FUEL=3000000 WARRANT_MAX_BITS=4194304 fuzz.exe --out DIR --seed N --seconds S SEED_FILE...
 
    Each round takes a file of the corpus, changes it a little (a number, a string, a key, a list, a whole line, a character), and
