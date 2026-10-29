@@ -826,6 +826,60 @@
    "why": "Nat.rec (fun _ => Nat) 0 (fun _ ih => ih) has its major premise missing: it is stuck, and equal to its eta-expansion. A mutation that read the major premise past the end of the arguments raised an internal error (a decline) here (found by mutation testing: nothing else compared a partly applied recursor)."
   },
   {
+   "path": "identity-function-not-an-annotation.ndjson",
+   "expect": "accept",
+   "why": "myIdentity.{u} (a : Sort u) : Sort u := a is a function that returns its first argument, like outParam, but it is not one of the four annotations the derivation strips (outParam, semiOutParam, optParam, autoParam): the field `myIdentity Nat` stays as it is, and the recursor's minor premise takes it. A mutation that stripped any such function refused the claimed recursor (found by mutation testing)."
+  },
+  {
+   "path": "rec-rule-names-the-wrong-constructor.ndjson",
+   "expect": "reject",
+   "why": "Bool.rec with the constructor names of its two computation rules exchanged and the right-hand sides left where they are: the rules differ from the derived ones in the constructor alone (found by mutation testing: every other test that changes a rule changes its right-hand side or the number of fields too).",
+   "msg": "a computation rule differs from the derivation"
+  },
+  {
+   "path": "nat-log2-0-0.ndjson",
+   "expect": "accept",
+   "why": "Nat.log2 0 is claimed to be 0. The machine logarithm is undefined at 0; the shortcut must answer 0 there, as the definition does (a mutation that did not special-case it raised an internal error: found by mutation testing)."
+  },
+  {
+   "path": "nat-log2-0-1.ndjson",
+   "expect": "reject",
+   "why": "Nat.log2 0 is claimed to be 1. The machine logarithm is undefined at 0; the shortcut must answer 0 there, as the definition does (a mutation that did not special-case it raised an internal error: found by mutation testing).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-log2-1-0.ndjson",
+   "expect": "accept",
+   "why": "Nat.log2 1 is claimed to be 0. The machine logarithm is undefined at 0; the shortcut must answer 0 there, as the definition does (a mutation that did not special-case it raised an internal error: found by mutation testing)."
+  },
+  {
+   "path": "nat-log2-2-1.ndjson",
+   "expect": "accept",
+   "why": "Nat.log2 2 is claimed to be 1. The machine logarithm is undefined at 0; the shortcut must answer 0 there, as the definition does (a mutation that did not special-case it raised an internal error: found by mutation testing)."
+  },
+  {
+   "path": "nat-log2-3-1.ndjson",
+   "expect": "accept",
+   "why": "Nat.log2 3 is claimed to be 1. The machine logarithm is undefined at 0; the shortcut must answer 0 there, as the definition does (a mutation that did not special-case it raised an internal error: found by mutation testing)."
+  },
+  {
+   "path": "nat-log2-4-2.ndjson",
+   "expect": "accept",
+   "why": "Nat.log2 4 is claimed to be 2. The machine logarithm is undefined at 0; the shortcut must answer 0 there, as the definition does (a mutation that did not special-case it raised an internal error: found by mutation testing)."
+  },
+  {
+   "path": "nat-log2-4-1.ndjson",
+   "expect": "reject",
+   "why": "Nat.log2 4 is claimed to be 1. The machine logarithm is undefined at 0; the shortcut must answer 0 there, as the definition does (a mutation that did not special-case it raised an internal error: found by mutation testing).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "inductive-fewer-binders-than-parameters.ndjson",
+   "expect": "reject",
+   "why": "T : Type is claimed to have one parameter. A mutation that dropped the check read the missing parameter later and raised an internal error (a decline) instead of refusing the claim (found by mutation testing).",
+   "msg": "number of parameters mismatch"
+  },
+  {
    "path": "work-budget-exhausted.ndjson",
    "expect": "decline",
    "why": "the same file as nat-log2-literal, run with a work budget of 10 steps (WARRANT_FUEL): the checker declines and says why. With its normal budget (400 million steps) the file is accepted. A budget can turn an accept into a decline, never a decline into an accept.",

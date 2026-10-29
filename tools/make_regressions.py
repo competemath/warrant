@@ -1646,6 +1646,89 @@ add(
     "(found by mutation testing: nothing else compared a partly applied recursor).",
 )
 
+# an identity-like function that is not one of the four annotations is not stripped from a field type
+b = base("Nat")
+b.definition(
+    "myIdentity",
+    ["u"],
+    ("pi", ("sort", ("param", "u")), ("sort", ("param", "u"))),
+    ("lam", ("sort", ("param", "u")), ("bvar", 0)),
+)
+one_field_block(
+    b,
+    ("app", ("const", "myIdentity", [ONE]), NAT),
+    ("app", ("const", "myIdentity", [ONE]), NAT),
+)
+add(
+    "identity-function-not-an-annotation.ndjson",
+    b.text(),
+    "accept",
+    "myIdentity.{u} (a : Sort u) : Sort u := a is a function that returns its first argument, like outParam, but it is not one of "
+    "the four annotations the derivation strips (outParam, semiOutParam, optParam, autoParam): the field `myIdentity Nat` stays "
+    "as it is, and the recursor's minor premise takes it. A mutation that stripped any such function refused the claimed "
+    "recursor (found by mutation testing).",
+)
+
+# a computation rule that names the wrong constructor, with the right right-hand side
+bool_lines = base("Bool", "Bool.rec").lines
+swapped = []
+for ln in bool_lines:
+    o = json.loads(ln)
+    if "inductive" in o and len(o["inductive"]["recs"]) == 1 and len(o["inductive"]["recs"][0]["rules"]) == 2:
+        rules = o["inductive"]["recs"][0]["rules"]
+        rules[0]["ctor"], rules[1]["ctor"] = rules[1]["ctor"], rules[0]["ctor"]
+        ln = json.dumps(o, separators=(",", ":"), sort_keys=True)
+    swapped.append(ln)
+add(
+    "rec-rule-names-the-wrong-constructor.ndjson",
+    "\n".join(swapped) + "\n",
+    "reject",
+    "Bool.rec with the constructor names of its two computation rules exchanged and the right-hand sides left where they are: "
+    "the rules differ from the derived ones in the constructor alone (found by mutation testing: every other test that changes a "
+    "rule changes its right-hand side or the number of fields too).",
+    msg="a computation rule differs from the derivation",
+)
+
+# Nat.log2 at the edges: log2 0 = 0 (the logarithm of zero is not an error), log2 1 = 0, log2 (2^k) = k, log2 (2^k - 1) = k - 1
+for x, claimed, expect in [
+    (0, 0, "accept"),
+    (0, 1, "reject"),
+    (1, 0, "accept"),
+    (2, 1, "accept"),
+    (3, 1, "accept"),
+    (4, 2, "accept"),
+    (4, 1, "reject"),
+]:
+    nat_def(
+        f"nat-log2-{x}-{claimed}",
+        _app(("const", "Nat.log2", []), ("nat", x)),
+        claimed,
+        expect,
+        f"Nat.log2 {x} is claimed to be {claimed}. The machine logarithm is undefined at 0; the shortcut must answer 0 there, "
+        "as the definition does (a mutation that did not special-case it raised an internal error: found by mutation testing).",
+    )
+
+# the type has fewer binders than the claimed number of parameters
+b = base("Nat")
+one_field_block(
+    b,
+    NAT,
+    NAT,
+    lambda types, ctors, recs: (
+        types[0].update(num_params=1),
+        ctors[0].update(num_params=1),
+        recs[0].update(num_params=1),
+    ),
+)
+add(
+    "inductive-fewer-binders-than-parameters.ndjson",
+    b.text(),
+    "reject",
+    "T : Type is claimed to have one parameter. A mutation that dropped the check read the missing parameter later and raised "
+    "an internal error (a decline) instead of refusing the claim (found by mutation testing).",
+    msg="number of parameters mismatch",
+)
+
 # the checker's own work budget and its caches
 b = Builder.extending(prims)
 b.axiom("T", [], ("pi", NAT, ("sort", ONE)))
