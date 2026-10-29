@@ -1221,6 +1221,24 @@
    "why": "the control for the previous file: that Eq on its own is a valid inductive family."
   },
   {
+   "path": "parse-negative-hints.ndjson",
+   "expect": "decline",
+   "why": "hints of regular height -1: declined with the reason (found by mutation testing: a line of one character, which can never be an object, was skipped silently; and a negative height was read).",
+   "msg": "unknown reducibility hints"
+  },
+  {
+   "path": "parse-one-character-line.ndjson",
+   "expect": "decline",
+   "why": "a line that is the number 5: declined with the reason (found by mutation testing: a line of one character, which can never be an object, was skipped silently; and a negative height was read).",
+   "msg": "expected an object"
+  },
+  {
+   "path": "parse-one-letter-line.ndjson",
+   "expect": "decline",
+   "why": "a line that is the letter x: declined with the reason (found by mutation testing: a line of one character, which can never be an object, was skipped silently; and a negative height was read).",
+   "msg": "not valid JSON"
+  },
+  {
    "path": "work-budget-exhausted.ndjson",
    "expect": "decline",
    "why": "the same file as nat-log2-literal, run with a work budget of 10 steps (WARRANT_FUEL): the checker declines and says why. With its normal budget (400 million steps) the file is accepted. A budget can turn an accept into a decline, never a decline into an accept.",

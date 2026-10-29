@@ -2561,6 +2561,33 @@ add(
     "the control for the previous file: that Eq on its own is a valid inductive family.",
 )
 
+# reducibility hints must be a natural number; a line must be a JSON object, even a line of one character
+m1 = json.dumps(Builder.META, separators=(",", ":"))
+okname = '{"in":1,"str":{"pre":0,"str":"a"}}'
+oksort = '{"il":1,"succ":0}\n{"ie":0,"sort":0}'
+for fname, lines, msg_, why in [
+    (
+        "parse-negative-hints",
+        [
+            okname,
+            oksort,
+            '{"def":{"name":1,"levelParams":[],"type":0,"value":0,"hints":{"regular":-1},"safety":"safe","all":[1]}}',
+        ],
+        "unknown reducibility hints",
+        "hints of regular height -1",
+    ),
+    ("parse-one-character-line", [okname, "5"], "expected an object", "a line that is the number 5"),
+    ("parse-one-letter-line", [okname, "x"], "not valid JSON", "a line that is the letter x"),
+]:
+    add(
+        f"{fname}.ndjson",
+        "\n".join([m1] + lines) + "\n",
+        "decline",
+        f"{why}: declined with the reason (found by mutation testing: a line of one character, which can never be an object, was "
+        "skipped silently; and a negative height was read).",
+        msg=msg_,
+    )
+
 # the checker's own work budget and its caches
 b = Builder.extending(prims)
 b.axiom("T", [], ("pi", NAT, ("sort", ONE)))
