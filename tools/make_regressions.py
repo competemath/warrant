@@ -30,6 +30,8 @@ files = []
 
 
 def add(name, text, expect, why, msg=None, may_decline=False, env=None):
+    if text.strip():
+        text = text.rstrip("\n") + "\n"  # one final newline: the end-of-file hook would make it so
     with open(os.path.join(OUT, name), "w", encoding="utf-8") as f:
         f.write(text)
     e = {"path": name, "expect": expect, "why": why}

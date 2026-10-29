@@ -183,4 +183,3 @@
 {"forallE":{"binderInfo":"implicit","body":63,"name":4,"type":0},"ie":64}
 
 {"quot":{"kind":"lift","levelParams":[1,17],"name":21,"type":64}}
-
