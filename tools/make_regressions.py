@@ -2858,8 +2858,8 @@ add(
 
 # Quot.lift and Quot.ind need Quot itself
 for target, removed, needs in [
-    ("Quot.lift", "type", "Quot.lift needs Quot"),
-    ("Quot.ind", ["type", "ctor"], "Quot.ind needs Quot"),
+    ("Quot.lift", "type", "Quot.lift needs Quot\n"),
+    ("Quot.ind", ["type", "ctor"], "Quot.ind needs Quot\n"),
 ]:
     add(
         f"quot-{target.split('.')[1]}-without-quot-type.ndjson",
@@ -2976,6 +2976,47 @@ add(
     "d : Nat := let x : Nat := true in 5: the value is a Bool, the body never uses x, so no other check sees it (found by mutation "
     "testing: the check could be dropped unnoticed).",
     msg="let value has the wrong type",
+)
+
+# two applications of one definition to the same arguments at different universe levels
+b = base("Nat", "Eq", "Eq.refl")
+S3 = ("sort", ("succ", ("succ", ("succ", 0))))
+S4 = ("succ", ("succ", ("succ", ("succ", 0))))
+b.axiom("A", ["u"], S3)
+b.definition("f", ["u"], ("pi", NAT, S3), ("lam", NAT, ("const", "A", [("param", "u")])), hints="regular")
+fa = lambda lvl: _app(("const", "f", [lvl]), ("nat", 5))  # noqa: E731
+b.theorem(
+    "t",
+    [],
+    _app(("const", "Eq", [S4]), S3, fa(0), fa(ONE)),
+    _app(("const", "Eq.refl", [S4]), S3, fa(0)),
+)
+add(
+    "same-arguments-different-levels.ndjson",
+    b.text(),
+    "reject",
+    "f.{u} (a : Nat) : Sort 3 := A.{u}, and the claim f.{0} 5 = f.{1} 5: the arguments agree, the levels do not, and the unfoldings "
+    "A.{0} and A.{1} are different constants. A mutation of the same-arguments shortcut that left the levels out accepted it (found by "
+    "mutation testing).",
+    msg="the value does not have the declared type",
+)
+
+# one constant at two universe levels
+b = base("Nat", "Eq", "Eq.refl")
+b.axiom("A", ["u"], S3)
+b.theorem(
+    "t",
+    [],
+    _app(("const", "Eq", [S4]), S3, ("const", "A", [0]), ("const", "A", [ONE])),
+    _app(("const", "Eq.refl", [S4]), S3, ("const", "A", [0])),
+)
+add(
+    "constant-at-two-levels.ndjson",
+    b.text(),
+    "reject",
+    "A.{0} = A.{1} for an axiom A.{u} : Sort 3: the same constant at different levels is not one term. A mutation of the comparison "
+    "of two constants that left the levels out accepted it (found by mutation testing).",
+    msg="the value does not have the declared type",
 )
 
 # the checker's own work budget and its caches

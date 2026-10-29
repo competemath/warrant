@@ -1480,13 +1480,13 @@
    "path": "quot-lift-without-quot-type.ndjson",
    "expect": "reject",
    "why": "Quot.lift declared without Quot (found by mutation testing: the check was only ever run for Quot.mk).",
-   "msg": "Quot.lift needs Quot"
+   "msg": "Quot.lift needs Quot\n"
   },
   {
    "path": "quot-ind-without-quot-type.ndjson",
    "expect": "reject",
    "why": "Quot.ind declared without Quot (found by mutation testing: the check was only ever run for Quot.mk).",
-   "msg": "Quot.ind needs Quot"
+   "msg": "Quot.ind needs Quot\n"
   },
   {
    "path": "projection-of-a-later-field-through-data.ndjson",
@@ -1510,6 +1510,18 @@
    "expect": "reject",
    "why": "d : Nat := let x : Nat := true in 5: the value is a Bool, the body never uses x, so no other check sees it (found by mutation testing: the check could be dropped unnoticed).",
    "msg": "let value has the wrong type"
+  },
+  {
+   "path": "same-arguments-different-levels.ndjson",
+   "expect": "reject",
+   "why": "f.{u} (a : Nat) : Sort 3 := A.{u}, and the claim f.{0} 5 = f.{1} 5: the arguments agree, the levels do not, and the unfoldings A.{0} and A.{1} are different constants. A mutation of the same-arguments shortcut that left the levels out accepted it (found by mutation testing).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "constant-at-two-levels.ndjson",
+   "expect": "reject",
+   "why": "A.{0} = A.{1} for an axiom A.{u} : Sort 3: the same constant at different levels is not one term. A mutation of the comparison of two constants that left the levels out accepted it (found by mutation testing).",
+   "msg": "the value does not have the declared type"
   },
   {
    "path": "work-budget-exhausted.ndjson",
