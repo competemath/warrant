@@ -1751,7 +1751,7 @@ for o in [
     {"in": 1, "str": {"pre": 0, "str": "N"}}, {"in": 2, "str": {"pre": 0, "str": "s"}},
     {"in": 3, "str": {"pre": 0, "str": "z"}}, {"in": 4, "str": {"pre": 0, "str": "d"}},
     {"il": 1, "succ": 0},
-    {"ie": 0, "sort": 1}, {"ie": 1, "const": {"name": 1, "us": []}}, {"ie": 2, "forallE": {"type": 1, "body": 1}},
+    {"ie": 0, "sort": 1}, {"ie": 1, "const": {"name": 1, "us": []}}, {"in": 5, "str": {"pre": 0, "str": "x"}}, {"ie": 2, "forallE": {"binderInfo": "default", "name": 5, "type": 1, "body": 1}},
     {"ie": 3, "const": {"name": 2, "us": []}}, {"ie": 4, "const": {"name": 3, "us": []}},
     {"axiom": {"name": 1, "levelParams": [], "type": 0, "isUnsafe": False}},
     {"axiom": {"name": 2, "levelParams": [], "type": 2, "isUnsafe": False}},

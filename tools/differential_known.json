@@ -34,5 +34,21 @@
  {
   "file": "blank-lines.ndjson",
   "why": "nanoda reads an empty line as a record and fails; WARRANT skips empty lines (lean4export never writes them)"
+ },
+ {
+  "file": "nat-shiftleft-amount-at-limit.ndjson",
+  "why": "WARRANT computes 1 << 2^24 (a number of 2^24 bits) and accepts; nanoda is killed by the system while computing it (it puts no bound on the size of a shift, WARRANT declines beyond 2^24)"
+ },
+ {
+  "file": "prim-dependency-opaque.ndjson",
+  "why": "the negative control for the name-keyed shortcuts: Nat.add's helper is an opaque constant, so WARRANT's fingerprint no longer matches and 10^8 + 10^8 is not computed; nanoda enables the shortcut by the name Nat.add alone and accepts (the unsoundness WARRANT's fingerprints close)"
+ },
+ {
+  "file": "prim-dependency-axiom.ndjson",
+  "why": "same, with the helper an axiom of the genuine type"
+ },
+ {
+  "file": "string-mk-literal.ndjson",
+  "why": "a toolchain whose String has the constructor String.mk and no String.ofList: WARRANT expands a literal through either; nanoda panics in its string-literal expansion (assertion in tc.rs:1104) on such an environment"
  }
 ]
