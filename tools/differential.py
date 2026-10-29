@@ -43,7 +43,12 @@ def run_warrant(binary, path, timeout):
 
 def run_other(cmd, path, timeout):
     if path.endswith(".gz"):
-        return "skip", "compressed"
+        with gzip.open(path, "rb") as f, tempfile.NamedTemporaryFile(suffix=".ndjson", delete=False) as t:
+            t.write(f.read())
+        try:
+            return run_other(cmd, t.name, timeout)
+        finally:
+            os.remove(t.name)
     try:
         p = subprocess.run(
             cmd.replace("{file}", shlex.quote(path)),

@@ -3,6 +3,7 @@
 fire (the manifest's `msg`). Every entry says what happened. Run from the repository root; the output is committed.
 """
 
+import gzip
 import json
 import os
 import sys
@@ -32,8 +33,15 @@ files = []
 def add(name, text, expect, why, msg=None, may_decline=False, env=None):
     if text.strip():
         text = text.rstrip("\n") + "\n"  # one final newline: the end-of-file hook would make it so
-    with open(os.path.join(OUT, name), "w", encoding="utf-8") as f:
-        f.write(text)
+    if (
+        len(text) > 200_000
+    ):  # large files are stored compressed (the checker and the tools read them through standard input)
+        name += ".gz"
+        with open(os.path.join(OUT, name), "wb") as raw, gzip.GzipFile(fileobj=raw, mode="wb", mtime=0) as g:
+            g.write(text.encode("utf-8"))
+    else:
+        with open(os.path.join(OUT, name), "w", encoding="utf-8") as f:
+            f.write(text)
     e = {"path": name, "expect": expect, "why": why}
     if msg:
         e["msg"] = msg
@@ -1193,7 +1201,19 @@ DEFEQ_MSG = "the value does not have the declared type"
 
 def nat_def(name, term, claimed, expect, why, msg=None, env=None, cut=None):
     """`d : T term := t` where `t : T claimed`: accepted exactly when term and claimed are definitionally equal."""
-    b = Builder.extending(slice_lines(prims, cut) if cut else prims)
+    if cut is None:  # only what the term mentions: the whole primitives file is 780 kB
+        names = set()
+
+        def walk(t):
+            if isinstance(t, tuple):
+                if len(t) == 3 and t[0] == "const":
+                    names.add(t[1])
+                for x in t:
+                    walk(x)
+
+        walk(term)
+        cut = sorted(names | {"Nat"})
+    b = Builder.extending(slice_lines(prims, cut))
     b.axiom("T", [], ("pi", NAT, ("sort", ONE)))
     b.axiom("t", [], _app(("const", "T", []), ("nat", claimed)))
     b.definition("d", [], _app(("const", "T", []), term), ("const", "t", []))

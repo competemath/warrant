@@ -8,12 +8,13 @@ that say the same thing in other words:
   renumber   every name, level and expression index is replaced by another number (order kept, gaps added)
   reorder    the keys of every object are in another order, with other spacing, and the lines end in CRLF
   both       the two together
-A variant the checker judges differently from the original (accept, reject or decline) is a finding: the verdict depended
-on something that is not the meaning of the file (an index, a key order, a line ending). Files that end in .gz, are larger
+A .gz file is read compressed. A variant the checker judges differently from the original (accept, reject or decline) is a finding: the verdict depended
+on something that is not the meaning of the file (an index, a key order, a line ending). Files that are larger
 than --max-bytes, or that the checker does not finish in --timeout seconds are left out.
 """
 
 import argparse
+import gzip
 import json
 import os
 import random
@@ -120,17 +121,24 @@ def main():
         with open(os.path.join(root, "manifest.json"), encoding="utf-8") as f:
             for e in json.load(f)["files"]:
                 path = os.path.join(root, e["path"])
-                if not path.endswith(".gz") and os.path.getsize(path) <= args.max_bytes:
+                if os.path.getsize(path) <= args.max_bytes:
                     files.append((path, e["path"]))
 
     def one(item):
         path, label = item
         rng = random.Random(f"{args.seed}:{label}")
+        if path.endswith(".gz"):
+            with gzip.open(path, "rt", encoding="utf-8") as f:
+                text = f.read()
+            path = os.path.join(args.work, label.replace("/", "_") + ".plain")
+            with open(path, "w", encoding="utf-8", newline="") as f:
+                f.write(text)
+        else:
+            with open(path, encoding="utf-8") as f:
+                text = f.read()
         base, bmsg = verdict(args.binary, path, args.timeout)
         if base == "timeout":
             return []
-        with open(path, encoding="utf-8") as f:
-            text = f.read()
         found = []
         for kind in ("renumber", "reorder", "both"):
             try:

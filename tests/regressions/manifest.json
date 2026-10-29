@@ -155,7 +155,7 @@
    "msg": "universe parameters differ from the derivation"
   },
   {
-   "path": "string-of-list-wrong-type.ndjson",
+   "path": "string-of-list-wrong-type.ndjson.gz",
    "expect": "reject",
    "why": "String.ofList is an axiom Nat -> String here and the file compares the literal \"a\" with String.ofList 5. A literal expands through the file's own String.ofList only when it has type List Char -> String (there is no String.mk here either), so the comparison has no meaning and is refused for that reason; a mutation that accepted the constant when either its universe parameters or its type fit expanded the literal anyway and failed later, for another reason.",
    "msg": "string literal: the environment has no String.ofList or String.mk of type List Char -> String"
@@ -371,12 +371,12 @@
    "msg": "projection index out of range"
   },
   {
-   "path": "nat-log2-literal.ndjson",
+   "path": "nat-log2-literal.ndjson.gz",
    "expect": "accept",
    "why": "t : T 9 offered as a T (Nat.log2 1000); log2 1000 is 9. Nat.log2 is defined by well-founded recursion, so only the literal shortcut (gated, like the others, on the genuine definition) decides it; a mutation that turned the shortcut off left the true claim undecided."
   },
   {
-   "path": "nat-log2-literal-wrong.ndjson",
+   "path": "nat-log2-literal-wrong.ndjson.gz",
    "expect": "reject",
    "why": "t : T 10 offered as a T (Nat.log2 1000); log2 1000 is 9. Nat.log2 is defined by well-founded recursion, so only the literal shortcut (gated, like the others, on the genuine definition) decides it; a mutation that turned the shortcut off left the true claim undecided.",
    "msg": "the value does not have the declared type"
@@ -483,89 +483,89 @@
    "why": "Lean.Syntax is the one nested inductive in Init (it contains Array Syntax, which contains List Syntax): the auxiliary types, their recursors and the restoring of the derived terms are exercised by nothing else in the quick tests (found by mutation testing: swapping the restore of a lambda for a Pi survived). Cut with: tools/slice.py init.ndjson out.ndjson Lean.Syntax"
   },
   {
-   "path": "nat-div-7-0-0.ndjson",
+   "path": "nat-div-7-0-0.ndjson.gz",
    "expect": "accept",
    "why": "Nat.div 7 0 is claimed to be 0 (dividing by zero gives zero). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict."
   },
   {
-   "path": "nat-div-7-0-7.ndjson",
+   "path": "nat-div-7-0-7.ndjson.gz",
    "expect": "reject",
    "why": "Nat.div 7 0 is claimed to be 7 (dividing by zero does not give the dividend). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict.",
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "nat-mod-7-0-7.ndjson",
+   "path": "nat-mod-7-0-7.ndjson.gz",
    "expect": "accept",
    "why": "Nat.mod 7 0 is claimed to be 7 (the remainder modulo zero is the number itself). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict."
   },
   {
-   "path": "nat-mod-7-0-0.ndjson",
+   "path": "nat-mod-7-0-0.ndjson.gz",
    "expect": "reject",
    "why": "Nat.mod 7 0 is claimed to be 0 (the remainder modulo zero is not zero). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict.",
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "nat-div-7-2-3.ndjson",
+   "path": "nat-div-7-2-3.ndjson.gz",
    "expect": "accept",
    "why": "Nat.div 7 2 is claimed to be 3 (division rounds down). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict."
   },
   {
-   "path": "nat-div-7-2-4.ndjson",
+   "path": "nat-div-7-2-4.ndjson.gz",
    "expect": "reject",
    "why": "Nat.div 7 2 is claimed to be 4 (division does not round up). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict.",
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "nat-mod-7-2-1.ndjson",
+   "path": "nat-mod-7-2-1.ndjson.gz",
    "expect": "accept",
    "why": "Nat.mod 7 2 is claimed to be 1 (7 mod 2). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict."
   },
   {
-   "path": "nat-mod-7-2-0.ndjson",
+   "path": "nat-mod-7-2-0.ndjson.gz",
    "expect": "reject",
    "why": "Nat.mod 7 2 is claimed to be 0 (7 mod 2 is not 0). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict.",
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "nat-gcd-12-18-6.ndjson",
+   "path": "nat-gcd-12-18-6.ndjson.gz",
    "expect": "accept",
    "why": "Nat.gcd 12 18 is claimed to be 6 (greatest common divisor). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict."
   },
   {
-   "path": "nat-gcd-12-18-12.ndjson",
+   "path": "nat-gcd-12-18-12.ndjson.gz",
    "expect": "reject",
    "why": "Nat.gcd 12 18 is claimed to be 12 (gcd is not the first argument). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict.",
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "nat-land-12-10-8.ndjson",
+   "path": "nat-land-12-10-8.ndjson.gz",
    "expect": "accept",
    "why": "Nat.land 12 10 is claimed to be 8 (bitwise and). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict."
   },
   {
-   "path": "nat-land-12-10-14.ndjson",
+   "path": "nat-land-12-10-14.ndjson.gz",
    "expect": "reject",
    "why": "Nat.land 12 10 is claimed to be 14 (bitwise and is not or). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict.",
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "nat-lor-12-10-14.ndjson",
+   "path": "nat-lor-12-10-14.ndjson.gz",
    "expect": "accept",
    "why": "Nat.lor 12 10 is claimed to be 14 (bitwise or). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict."
   },
   {
-   "path": "nat-lor-12-10-8.ndjson",
+   "path": "nat-lor-12-10-8.ndjson.gz",
    "expect": "reject",
    "why": "Nat.lor 12 10 is claimed to be 8 (bitwise or is not and). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict.",
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "nat-xor-12-10-6.ndjson",
+   "path": "nat-xor-12-10-6.ndjson.gz",
    "expect": "accept",
    "why": "Nat.xor 12 10 is claimed to be 6 (bitwise exclusive or). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict."
   },
   {
-   "path": "nat-xor-12-10-14.ndjson",
+   "path": "nat-xor-12-10-14.ndjson.gz",
    "expect": "reject",
    "why": "Nat.xor 12 10 is claimed to be 14 (exclusive or is not or). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict.",
    "msg": "the value does not have the declared type"
@@ -582,23 +582,23 @@
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "nat-shiftright-48-4-3.ndjson",
+   "path": "nat-shiftright-48-4-3.ndjson.gz",
    "expect": "accept",
    "why": "Nat.shiftRight 48 4 is claimed to be 3 (48 shifted right by 4). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict."
   },
   {
-   "path": "nat-shiftright-48-4-768.ndjson",
+   "path": "nat-shiftright-48-4-768.ndjson.gz",
    "expect": "reject",
    "why": "Nat.shiftRight 48 4 is claimed to be 768 (a shift right is not a shift left). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict.",
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "nat-shiftright-5-100000000000000000000-0.ndjson",
+   "path": "nat-shiftright-5-100000000000000000000-0.ndjson.gz",
    "expect": "accept",
    "why": "Nat.shiftRight 5 100000000000000000000 is claimed to be 0 (shifting right by more than the number has bits leaves nothing, whatever the amount). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict."
   },
   {
-   "path": "nat-shiftright-5-100000000000000000000-5.ndjson",
+   "path": "nat-shiftright-5-100000000000000000000-5.ndjson.gz",
    "expect": "reject",
    "why": "Nat.shiftRight 5 100000000000000000000 is claimed to be 5 (the amount is not ignored). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict.",
    "msg": "the value does not have the declared type"
@@ -615,35 +615,35 @@
    "msg": "too large"
   },
   {
-   "path": "nat-pow-size-at-limit.ndjson",
+   "path": "nat-pow-size-at-limit.ndjson.gz",
    "expect": "accept",
    "why": "32768^(2^24) has 15*2^24+1 bits: its size estimate, 16*2^24 = 2^28, is exactly the limit and is computed. A decline is the checker saying it cannot decide, never a verdict."
   },
   {
-   "path": "nat-pow-size-over-limit.ndjson",
+   "path": "nat-pow-size-over-limit.ndjson.gz",
    "expect": "decline",
    "why": "65536^(2^24): the size estimate is 17*2^24, over the limit 2^28. A decline is the checker saying it cannot decide, never a verdict.",
    "msg": "too large"
   },
   {
-   "path": "nat-shiftleft-amount-at-limit.ndjson",
+   "path": "nat-shiftleft-amount-at-limit.ndjson.gz",
    "expect": "accept",
    "why": "1 shifted left by 2^24, the largest amount the shortcut takes. A decline is the checker saying it cannot decide, never a verdict."
   },
   {
-   "path": "nat-shiftleft-amount-over-limit.ndjson",
+   "path": "nat-shiftleft-amount-over-limit.ndjson.gz",
    "expect": "decline",
    "why": "one past the largest shift. A decline is the checker saying it cannot decide, never a verdict.",
    "msg": "too large"
   },
   {
-   "path": "nat-shiftleft-amount-huge.ndjson",
+   "path": "nat-shiftleft-amount-huge.ndjson.gz",
    "expect": "decline",
    "why": "a shift by 10^30 does not fit a machine integer: it must be declined before the amount is converted. A decline is the checker saying it cannot decide, never a verdict.",
    "msg": "too large"
   },
   {
-   "path": "nat-few-steps-land-5408.ndjson",
+   "path": "nat-few-steps-land-5408.ndjson.gz",
    "expect": "accept",
    "why": "Nat.land on operands of about 113 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
    "env": {
@@ -651,7 +651,7 @@
    }
   },
   {
-   "path": "nat-few-steps-land-5409.ndjson",
+   "path": "nat-few-steps-land-5409.ndjson.gz",
    "expect": "reject",
    "why": "Nat.land on operands of about 113 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
    "msg": "the value does not have the declared type",
@@ -660,7 +660,7 @@
    }
   },
   {
-   "path": "nat-few-steps-lor-1037.ndjson",
+   "path": "nat-few-steps-lor-1037.ndjson.gz",
    "expect": "accept",
    "why": "Nat.lor on operands of about 113 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
    "env": {
@@ -668,7 +668,7 @@
    }
   },
   {
-   "path": "nat-few-steps-lor-1038.ndjson",
+   "path": "nat-few-steps-lor-1038.ndjson.gz",
    "expect": "reject",
    "why": "Nat.lor on operands of about 113 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
    "msg": "the value does not have the declared type",
@@ -677,7 +677,7 @@
    }
   },
   {
-   "path": "nat-few-steps-xor-5629.ndjson",
+   "path": "nat-few-steps-xor-5629.ndjson.gz",
    "expect": "accept",
    "why": "Nat.xor on operands of about 113 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
    "env": {
@@ -685,7 +685,7 @@
    }
   },
   {
-   "path": "nat-few-steps-xor-5630.ndjson",
+   "path": "nat-few-steps-xor-5630.ndjson.gz",
    "expect": "reject",
    "why": "Nat.xor on operands of about 113 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
    "msg": "the value does not have the declared type",
@@ -694,7 +694,7 @@
    }
   },
   {
-   "path": "nat-few-steps-gcd-1.ndjson",
+   "path": "nat-few-steps-gcd-1.ndjson.gz",
    "expect": "accept",
    "why": "Nat.gcd on operands of about 277 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
    "env": {
@@ -702,7 +702,7 @@
    }
   },
   {
-   "path": "nat-few-steps-gcd-2.ndjson",
+   "path": "nat-few-steps-gcd-2.ndjson.gz",
    "expect": "reject",
    "why": "Nat.gcd on operands of about 277 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
    "msg": "the value does not have the declared type",
@@ -711,7 +711,7 @@
    }
   },
   {
-   "path": "nat-few-steps-div-7785.ndjson",
+   "path": "nat-few-steps-div-7785.ndjson.gz",
    "expect": "accept",
    "why": "Nat.div on operands of about 212 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
    "env": {
@@ -719,7 +719,7 @@
    }
   },
   {
-   "path": "nat-few-steps-div-7786.ndjson",
+   "path": "nat-few-steps-div-7786.ndjson.gz",
    "expect": "reject",
    "why": "Nat.div on operands of about 212 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
    "msg": "the value does not have the declared type",
@@ -829,89 +829,89 @@
    "msg": "number of parameters differs"
   },
   {
-   "path": "nat-mul-chain-of-squarings-20.ndjson",
+   "path": "nat-mul-chain-of-squarings-20.ndjson.gz",
    "expect": "accept",
    "why": "2^(2^20) has 2^20 + 1 bits; log2 of it is 2^20."
   },
   {
-   "path": "nat-mul-chain-of-squarings-29.ndjson",
+   "path": "nat-mul-chain-of-squarings-29.ndjson.gz",
    "expect": "decline",
    "why": "the last square would have 2^29 + 1 bits, past the limit of 2^28: declined, never computed.",
    "msg": "mul: result too large"
   },
   {
-   "path": "string-literal-expands.ndjson",
+   "path": "string-literal-expands.ndjson.gz",
    "expect": "accept",
    "why": "\"ab\" is String.ofList [97, 98]. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check)."
   },
   {
-   "path": "string-literal-empty.ndjson",
+   "path": "string-literal-empty.ndjson.gz",
    "expect": "accept",
    "why": "\"\" is String.ofList []. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check)."
   },
   {
-   "path": "string-literal-wrong-char.ndjson",
+   "path": "string-literal-wrong-char.ndjson.gz",
    "expect": "reject",
    "why": "the second character differs. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check).",
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "string-literal-too-short.ndjson",
+   "path": "string-literal-too-short.ndjson.gz",
    "expect": "reject",
    "why": "the list is shorter than the string. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check).",
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "string-literal-too-long.ndjson",
+   "path": "string-literal-too-long.ndjson.gz",
    "expect": "reject",
    "why": "the list is longer than the string. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check).",
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "string-literal-two-byte-char.ndjson",
+   "path": "string-literal-two-byte-char.ndjson.gz",
    "expect": "accept",
    "why": "a character of two UTF-8 bytes is one list element. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check)."
   },
   {
-   "path": "string-literal-bytes-not-chars.ndjson",
+   "path": "string-literal-bytes-not-chars.ndjson.gz",
    "expect": "reject",
    "why": "the elements are characters, not bytes. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check).",
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "string-literal-three-byte-char.ndjson",
+   "path": "string-literal-three-byte-char.ndjson.gz",
    "expect": "accept",
    "why": "a character of three UTF-8 bytes. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check)."
   },
   {
-   "path": "string-literal-four-byte-char.ndjson",
+   "path": "string-literal-four-byte-char.ndjson.gz",
    "expect": "accept",
    "why": "a character of four UTF-8 bytes. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check)."
   },
   {
-   "path": "string-literal-mixed-widths.ndjson",
+   "path": "string-literal-mixed-widths.ndjson.gz",
    "expect": "accept",
    "why": "characters of different widths. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check)."
   },
   {
-   "path": "string-literal-mixed-widths-wrong.ndjson",
+   "path": "string-literal-mixed-widths-wrong.ndjson.gz",
    "expect": "reject",
    "why": "one character missing. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check).",
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "string-literals-differ.ndjson",
+   "path": "string-literals-differ.ndjson.gz",
    "expect": "reject",
    "why": "\"a\" and \"b\" are different literals; a mutation that made two string literals equal whatever their text accepted.",
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "string-literal-whnf.ndjson",
+   "path": "string-literal-whnf.ndjson.gz",
    "expect": "accept",
    "why": "String.toByteArray of the literal \"ab\" against String.toByteArray of the expansion: the literal must be expanded when it is the major premise of a recursor or the argument of a projection (found by coverage)."
   },
   {
-   "path": "string-literal-whnf-wrong.ndjson",
+   "path": "string-literal-whnf-wrong.ndjson.gz",
    "expect": "reject",
    "why": "String.toByteArray of the literal \"ab\" against String.toByteArray of the expansion: the literal must be expanded when it is the major premise of a recursor or the argument of a projection (found by coverage).",
    "msg": "the value does not have the declared type"
@@ -991,23 +991,23 @@
    "msg": "universe parameter out of scope in A"
   },
   {
-   "path": "string-literal-reversed.ndjson",
+   "path": "string-literal-reversed.ndjson.gz",
    "expect": "accept",
    "why": "String.ofList [..] against the literal \"ab\": the expansion also happens when the application is on the left."
   },
   {
-   "path": "string-literal-reversed-wrong.ndjson",
+   "path": "string-literal-reversed-wrong.ndjson.gz",
    "expect": "reject",
    "why": "String.ofList [..] against the literal \"ab\": the expansion also happens when the application is on the left.",
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "string-mk-literal.ndjson",
+   "path": "string-mk-literal.ndjson.gz",
    "expect": "accept",
    "why": "A toolchain whose String has the constructor String.mk (and no String.ofList): the literal \"ab\" is String.mk [a, b]. Found by mutation testing: nothing used the older name."
   },
   {
-   "path": "string-mk-literal-wrong.ndjson",
+   "path": "string-mk-literal-wrong.ndjson.gz",
    "expect": "reject",
    "why": "A toolchain whose String has the constructor String.mk (and no String.ofList): the literal \"ab\" is String.mk [a, b]. Found by mutation testing: nothing used the older name.",
    "msg": "the value does not have the declared type"
@@ -1034,38 +1034,38 @@
    "msg": "a computation rule differs from the derivation"
   },
   {
-   "path": "nat-log2-0-0.ndjson",
+   "path": "nat-log2-0-0.ndjson.gz",
    "expect": "accept",
    "why": "Nat.log2 0 is claimed to be 0. The machine logarithm is undefined at 0; the shortcut must answer 0 there, as the definition does (a mutation that did not special-case it raised an internal error: found by mutation testing)."
   },
   {
-   "path": "nat-log2-0-1.ndjson",
+   "path": "nat-log2-0-1.ndjson.gz",
    "expect": "reject",
    "why": "Nat.log2 0 is claimed to be 1. The machine logarithm is undefined at 0; the shortcut must answer 0 there, as the definition does (a mutation that did not special-case it raised an internal error: found by mutation testing).",
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "nat-log2-1-0.ndjson",
+   "path": "nat-log2-1-0.ndjson.gz",
    "expect": "accept",
    "why": "Nat.log2 1 is claimed to be 0. The machine logarithm is undefined at 0; the shortcut must answer 0 there, as the definition does (a mutation that did not special-case it raised an internal error: found by mutation testing)."
   },
   {
-   "path": "nat-log2-2-1.ndjson",
+   "path": "nat-log2-2-1.ndjson.gz",
    "expect": "accept",
    "why": "Nat.log2 2 is claimed to be 1. The machine logarithm is undefined at 0; the shortcut must answer 0 there, as the definition does (a mutation that did not special-case it raised an internal error: found by mutation testing)."
   },
   {
-   "path": "nat-log2-3-1.ndjson",
+   "path": "nat-log2-3-1.ndjson.gz",
    "expect": "accept",
    "why": "Nat.log2 3 is claimed to be 1. The machine logarithm is undefined at 0; the shortcut must answer 0 there, as the definition does (a mutation that did not special-case it raised an internal error: found by mutation testing)."
   },
   {
-   "path": "nat-log2-4-2.ndjson",
+   "path": "nat-log2-4-2.ndjson.gz",
    "expect": "accept",
    "why": "Nat.log2 4 is claimed to be 2. The machine logarithm is undefined at 0; the shortcut must answer 0 there, as the definition does (a mutation that did not special-case it raised an internal error: found by mutation testing)."
   },
   {
-   "path": "nat-log2-4-1.ndjson",
+   "path": "nat-log2-4-1.ndjson.gz",
    "expect": "reject",
    "why": "Nat.log2 4 is claimed to be 1. The machine logarithm is undefined at 0; the shortcut must answer 0 there, as the definition does (a mutation that did not special-case it raised an internal error: found by mutation testing).",
    "msg": "the value does not have the declared type"
@@ -1218,78 +1218,78 @@
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "nat-big-div-2345-0.ndjson",
+   "path": "nat-big-div-2345-0.ndjson.gz",
    "expect": "accept",
    "why": "Nat.div on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
   },
   {
-   "path": "nat-big-div-2345-1.ndjson",
+   "path": "nat-big-div-2345-1.ndjson.gz",
    "expect": "reject",
    "why": "Nat.div on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "nat-big-mod-2345-2345.ndjson",
+   "path": "nat-big-mod-2345-2345.ndjson.gz",
    "expect": "accept",
    "why": "Nat.mod on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
   },
   {
-   "path": "nat-big-mod-2345-2346.ndjson",
+   "path": "nat-big-mod-2345-2346.ndjson.gz",
    "expect": "reject",
    "why": "Nat.mod on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "nat-big-mod-2345-5.ndjson",
+   "path": "nat-big-mod-2345-5.ndjson.gz",
    "expect": "accept",
    "why": "Nat.mod on operands of about 100 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
   },
   {
-   "path": "nat-big-mod-2345-6.ndjson",
+   "path": "nat-big-mod-2345-6.ndjson.gz",
    "expect": "reject",
    "why": "Nat.mod on operands of about 100 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "nat-big-gcd-9824-576.ndjson",
+   "path": "nat-big-gcd-9824-576.ndjson.gz",
    "expect": "accept",
    "why": "Nat.gcd on operands of about 122 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
   },
   {
-   "path": "nat-big-gcd-9824-577.ndjson",
+   "path": "nat-big-gcd-9824-577.ndjson.gz",
    "expect": "reject",
    "why": "Nat.gcd on operands of about 122 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "nat-big-land-2345-5408.ndjson",
+   "path": "nat-big-land-2345-5408.ndjson.gz",
    "expect": "accept",
    "why": "Nat.land on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
   },
   {
-   "path": "nat-big-land-2345-5409.ndjson",
+   "path": "nat-big-land-2345-5409.ndjson.gz",
    "expect": "reject",
    "why": "Nat.land on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "nat-big-lor-2345-1037.ndjson",
+   "path": "nat-big-lor-2345-1037.ndjson.gz",
    "expect": "accept",
    "why": "Nat.lor on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
   },
   {
-   "path": "nat-big-lor-2345-1038.ndjson",
+   "path": "nat-big-lor-2345-1038.ndjson.gz",
    "expect": "reject",
    "why": "Nat.lor on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "nat-big-xor-2345-5629.ndjson",
+   "path": "nat-big-xor-2345-5629.ndjson.gz",
    "expect": "accept",
    "why": "Nat.xor on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
   },
   {
-   "path": "nat-big-xor-2345-5630.ndjson",
+   "path": "nat-big-xor-2345-5630.ndjson.gz",
    "expect": "reject",
    "why": "Nat.xor on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
    "msg": "the value does not have the declared type"
@@ -1306,12 +1306,12 @@
    "msg": "the value does not have the declared type"
   },
   {
-   "path": "nat-big-shiftright-2345-2947.ndjson",
+   "path": "nat-big-shiftright-2345-2947.ndjson.gz",
    "expect": "accept",
    "why": "Nat.shiftRight on operands of about 100 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
   },
   {
-   "path": "nat-big-shiftright-2345-2948.ndjson",
+   "path": "nat-big-shiftright-2345-2948.ndjson.gz",
    "expect": "reject",
    "why": "Nat.shiftRight on operands of about 100 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
    "msg": "the value does not have the declared type"
@@ -1368,7 +1368,7 @@
    "msg": "invalid return type"
   },
   {
-   "path": "string-mk-with-universe-parameter.ndjson",
+   "path": "string-mk-with-universe-parameter.ndjson.gz",
    "expect": "reject",
    "why": "String.mk.{u} : List Char -> String, with a universe parameter it does not use: a literal would expand to String.mk without levels, which is not that constant, so the environment has no usable constructor for string literals (found by mutation testing).",
    "msg": "string literal: the environment has no String.ofList or String.mk"
@@ -1535,7 +1535,7 @@
    "msg": "application type mismatch"
   },
   {
-   "path": "work-budget-exhausted.ndjson",
+   "path": "work-budget-exhausted.ndjson.gz",
    "expect": "decline",
    "why": "the same file as nat-log2-literal, run with a work budget of 10 steps (WARRANT_FUEL): the checker declines and says why. With its normal budget (400 million steps) the file is accepted. A budget can turn an accept into a decline, never a decline into an accept.",
    "msg": "work budget exhausted",
