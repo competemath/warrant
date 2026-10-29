@@ -1171,6 +1171,12 @@
    "msg": "invalid return type"
   },
   {
+   "path": "string-mk-with-universe-parameter.ndjson",
+   "expect": "reject",
+   "why": "String.mk.{u} : List Char -> String, with a universe parameter it does not use: a literal would expand to String.mk without levels, which is not that constant, so the environment has no usable constructor for string literals (found by mutation testing).",
+   "msg": "string literal: the environment has no String.ofList or String.mk"
+  },
+  {
    "path": "work-budget-exhausted.ndjson",
    "expect": "decline",
    "why": "the same file as nat-log2-literal, run with a work budget of 10 steps (WARRANT_FUEL): the checker declines and says why. With its normal budget (400 million steps) the file is accepted. A budget can turn an accept into a decline, never a decline into an accept.",

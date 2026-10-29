@@ -2349,6 +2349,25 @@ add(
     msg="invalid return type",
 )
 
+# String.mk with a universe parameter is not the constructor a literal expands through
+b = base("Char", "Nat", "List", "List.nil", "List.cons", "Eq", "Eq.refl", "Char.ofNat")
+b.axiom("String", [], ("sort", ONE))
+b.axiom("String.mk", ["u"], ("pi", ("app", ("const", "List", [0]), CHAR), STRING))
+b.theorem(
+    "t",
+    [],
+    _app(("const", "Eq", [ONE]), STRING, ("str", "ab"), _app(("const", "String.mk", [0]), chars([97, 98]))),
+    _app(("const", "Eq.refl", [ONE]), STRING, ("str", "ab")),
+)
+add(
+    "string-mk-with-universe-parameter.ndjson",
+    b.text(),
+    "reject",
+    "String.mk.{u} : List Char -> String, with a universe parameter it does not use: a literal would expand to String.mk without "
+    "levels, which is not that constant, so the environment has no usable constructor for string literals (found by mutation testing).",
+    msg="string literal: the environment has no String.ofList or String.mk",
+)
+
 # the checker's own work budget and its caches
 b = Builder.extending(prims)
 b.axiom("T", [], ("pi", NAT, ("sort", ONE)))
