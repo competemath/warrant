@@ -490,84 +490,15 @@ def gen_nat_with_prelude(rng, c, prelude):
 
 
 def nat_claim(prelude, op, x, y, claimed, wrong):
-    """prelude + `theorem forge_nat : Nat.op x y = claimed := Eq.refl (Nat.op x y)`; None if the prelude lacks a name."""
-    # name/level/expr ids continue after the prelude's
-    nn = nl = ne = 0
-    names = {}
-    for ln in prelude:
-        o = json.loads(ln)
-        if "in" in o:
-            nn = max(nn, o["in"])
-            if "str" in o:
-                p = names.get(o["str"]["pre"], "")
-                names[o["in"]] = (p + "." if p else "") + o["str"]["str"]
-            else:
-                p = names.get(o["num"]["pre"], "")
-                names[o["in"]] = (p + "." if p else "") + str(o["num"]["i"])
-        elif "il" in o:
-            nl = max(nl, o["il"])
-        elif "ie" in o:
-            ne = max(ne, o["ie"])
-    inv = {v: k for k, v in names.items()}
-    for need in ("Nat", "Eq", "Eq.refl", op):
-        if need not in inv:
-            return None
-    out = []
-    ids = {"in": nn, "il": nl, "ie": ne + 1}
-
-    def nid(s):
-        if s in inv:
-            return inv[s]
-        pre, _, last = s.rpartition(".")
-        p = nid(pre) if pre else 0
-        ids["in"] += 1
-        inv[s] = ids["in"]
-        out.append(json.dumps({"in": ids["in"], "str": {"pre": p, "str": last}}, separators=(",", ":")))
-        return ids["in"]
-
-    cache = {}
-
-    def lvl_one():
-        if "one" not in cache:
-            ids["il"] += 1
-            out.append(json.dumps({"il": ids["il"], "succ": 0}, separators=(",", ":")))
-            cache["one"] = ids["il"]
-        return cache["one"]
-
-    def ex(body):
-        key = json.dumps(body, sort_keys=True)
-        if key in cache:
-            return cache[key]
-        i = ids["ie"]
-        ids["ie"] += 1
-        out.append(json.dumps({"ie": i, **body}, separators=(",", ":")))
-        cache[key] = i
-        return i
-
-    nat = ex({"const": {"name": nid("Nat"), "us": []}})
-    lit = lambda v: ex({"natVal": str(v)})  # noqa: E731
-    app = lambda f, a: ex({"app": {"fn": f, "arg": a}})  # noqa: E731
-    lhs = app(app(ex({"const": {"name": nid(op), "us": []}}), lit(x)), lit(y))
-    eq = ex({"const": {"name": nid("Eq"), "us": [lvl_one()]}})
-    ty = app(app(app(eq, nat), lhs), lit(claimed))
-    refl = ex({"const": {"name": nid("Eq.refl"), "us": [lvl_one()]}})
-    val = app(app(refl, nat), lhs)
-    out.append(
-        json.dumps(
-            {
-                "thm": {
-                    "name": nid("forge_nat"),
-                    "levelParams": [],
-                    "type": ty,
-                    "value": val,
-                    "all": [nid("forge_nat")],
-                }
-            },
-            separators=(",", ":"),
-        )
-    )
-    expect = "reject" if wrong else "accept"
-    return "\n".join(prelude + out) + "\n", expect, f"{op} {x} {y} -> {claimed}"
+    """The part of the prelude that Nat, Eq and [op] need, plus `theorem forge_nat : Nat.op x y = claimed := Eq.refl (Nat.op x y)`;
+    None if the prelude lacks a name."""
+    try:
+        b = prelude_base(prelude, ["Nat", "Eq", "Eq.refl", op])
+    except SystemExit:
+        return None
+    lhs = _app(("const", op, []), ("nat", x), ("nat", y))
+    b.theorem("forge_nat", [], _eq(ONE, NAT, lhs, ("nat", claimed)), _refl(ONE, NAT, lhs))
+    return b.text(), "reject" if wrong else "accept", f"{op} {x} {y} -> {claimed}"
 
 
 _BASES = {}

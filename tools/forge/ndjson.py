@@ -10,6 +10,34 @@ Levels: 0, ("succ", l), ("max", a, b), ("imax", a, b), ("param", "u").
 import json
 
 
+def _decode_expr(o, name_of, level_of, expr_of):
+    """The builder's tuple form of an exported expression node, or None for a form it does not write."""
+    if "sort" in o:
+        return ("sort", level_of[o["sort"]])
+    if "const" in o:
+        c = o["const"]
+        return ("const", name_of[c["name"]], [level_of[u] for u in c["us"]])
+    if "app" in o:
+        return ("app", expr_of[o["app"]["fn"]], expr_of[o["app"]["arg"]])
+    if "lam" in o:
+        return ("lam", expr_of[o["lam"]["type"]], expr_of[o["lam"]["body"]])
+    if "forallE" in o:
+        return ("pi", expr_of[o["forallE"]["type"]], expr_of[o["forallE"]["body"]])
+    if "bvar" in o:
+        return ("bvar", o["bvar"])
+    if "natVal" in o:
+        return ("nat", int(o["natVal"]))
+    if "strVal" in o:
+        return ("str", o["strVal"])
+    if "proj" in o:
+        p = o["proj"]
+        return ("proj", name_of[p["typeName"]], p["idx"], expr_of[p["struct"]])
+    if "letE" in o:
+        t = o["letE"]
+        return ("let", expr_of[t["type"]], expr_of[t["value"]], expr_of[t["body"]])
+    return None
+
+
 class Builder:
     META = {
         "meta": {
@@ -31,24 +59,49 @@ class Builder:
     @classmethod
     def extending(cls, lines):
         """A builder that continues an existing export: new names, levels and expressions are numbered after the ones in
-        [lines], and a name already defined there keeps its id. Declarations of [lines] are kept as they are."""
+        [lines], a node already there is reused (an export with two identical nodes is malformed, and some checkers
+        refuse it), and a name already defined keeps its id. Declarations of [lines] are kept as they are."""
         b = cls()
         b.lines = [ln.rstrip("\n") for ln in lines]
-        by_id = {0: ""}
+        name_of = {0: ""}
+        level_of = {0: 0}
+        expr_of = {}
         for ln in b.lines:
             o = json.loads(ln)
             if "in" in o:
                 sub = o.get("str") or o.get("num")
-                pre = by_id[sub["pre"]]
+                pre = name_of[sub["pre"]]
                 last = sub["str"] if "str" in o else str(sub["i"])
-                by_id[o["in"]] = (pre + "." if pre else "") + last
+                name_of[o["in"]] = (pre + "." if pre else "") + last
                 b.n_names = max(b.n_names, o["in"])
             elif "il" in o:
+                k = next(x for x in o if x != "il")
+                v = o[k]
+                lv = (
+                    ("param", name_of[v])
+                    if k == "param"
+                    else ("succ", level_of[v])
+                    if k == "succ"
+                    else (k, level_of[v[0]], level_of[v[1]])
+                )
+                level_of[o["il"]] = lv
+                b.levels[json.dumps(lv)] = o["il"]
                 b.n_levels = max(b.n_levels, o["il"])
             elif "ie" in o:
+                e = _decode_expr(o, name_of, level_of, expr_of)
+                if e is not None:
+                    expr_of[o["ie"]] = e
+                    b.exprs.setdefault(json.dumps(e), o["ie"])
                 b.n_exprs = max(b.n_exprs, o["ie"] + 1)
-        b.names = {v: k for k, v in by_id.items()}
+        b.names = {v: k for k, v in name_of.items()}
         return b
+
+    def lparams(self, ps):
+        """Name ids of declared universe parameters. A canonical export has a `param` level node for each, and some
+        checkers insist on it, so one is interned here."""
+        for p in ps:
+            self.level(("param", p))
+        return [self.name(p) for p in ps]
 
     def _emit(self, obj):
         self.lines.append(json.dumps(obj, separators=(",", ":"), sort_keys=True))
@@ -136,7 +189,7 @@ class Builder:
             {
                 "axiom": {
                     "name": self.name(name),
-                    "levelParams": [self.name(p) for p in lparams],
+                    "levelParams": self.lparams(lparams),
                     "type": self.expr(ty),
                     "isUnsafe": unsafe,
                 }
@@ -148,7 +201,7 @@ class Builder:
             {
                 "def": {
                     "name": self.name(name),
-                    "levelParams": [self.name(p) for p in lparams],
+                    "levelParams": self.lparams(lparams),
                     "type": self.expr(ty),
                     "value": self.expr(val),
                     "hints": ({"regular": 1} if hints == "regular" else hints),
@@ -170,7 +223,7 @@ class Builder:
                     "types": [
                         {
                             "name": self.name(t["name"]),
-                            "levelParams": [self.name(x) for x in t.get("lparams", [])],
+                            "levelParams": self.lparams(t.get("lparams", [])),
                             "type": self.expr(t["type"]),
                             "all": [self.name(x) for x in names],
                             "ctors": [self.name(x) for x in t.get("ctors", [])],
@@ -187,7 +240,7 @@ class Builder:
                         {
                             "name": self.name(c["name"]),
                             "induct": self.name(c["induct"]),
-                            "levelParams": [self.name(x) for x in c.get("lparams", [])],
+                            "levelParams": self.lparams(c.get("lparams", [])),
                             "type": self.expr(c["type"]),
                             "cidx": c["cidx"],
                             "numParams": c["num_params"],
@@ -199,7 +252,7 @@ class Builder:
                     "recs": [
                         {
                             "name": self.name(r["name"]),
-                            "levelParams": [self.name(x) for x in r.get("lparams", [])],
+                            "levelParams": self.lparams(r.get("lparams", [])),
                             "type": self.expr(r["type"]),
                             "all": [self.name(x) for x in names],
                             "numParams": r["num_params"],
@@ -224,7 +277,7 @@ class Builder:
             {
                 "thm": {
                     "name": self.name(name),
-                    "levelParams": [self.name(p) for p in lparams],
+                    "levelParams": self.lparams(lparams),
                     "type": self.expr(ty),
                     "value": self.expr(val),
                     "all": [self.name(name)],
