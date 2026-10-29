@@ -33,5 +33,61 @@
   "from": "false",
   "to": "true",
   "why": "unreachable: the derived declarations of a block are inductive types, constructors and recursors by construction"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "| _ -> false",
+  "from": "false",
+  "to": "true",
+  "why": "is_prop_type on a type whose own type is not a Sort after reduction: unreachable for a well-typed term (the type of a type is a Sort)"
+ },
+ {
+  "file": "src/expr.ml",
+  "context": "permanent := true;",
+  "from": "true",
+  "to": "false",
+  "why": "only decides which table interns the file's terms (strong or weak); the parser keeps every term it builds alive, so nothing observable changes"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "and infer_only st e = infer st ~check:false e",
+  "from": "false",
+  "to": "true",
+  "why": "re-checks a term that is already checked; the result type is the same"
+ },
+ {
+  "file": "src/expr.ml",
+  "context": "memo_used := true;",
+  "from": "true",
+  "to": "false",
+  "why": "performance flag of the lazy memo for instantiate; same terms either way"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "if is_prop_type st raw_type || is_prop_type st e_type then e",
+  "from": "||",
+  "to": "&&",
+  "why": "second line of defence: arena bad/bugs/rec-of-subst-prop is rejected by the other Prop-ness checks without it; it only matters where both would have to be fooled"
+ },
+ {
+  "file": "src/expr.ml",
+  "context": "if n = 0 || not e.has_fvar then e",
+  "from": "||",
+  "to": "&&",
+  "why": "early exit of abstract; with no ids to abstract the traversal gives the same term"
+ },
+ {
+  "file": "src/expr.ml",
+  "context": "| BVar _ | Sort _ | Const _ | Nat _ | Str _ -> true",
+  "from": "true",
+  "to": "false",
+  "why": "unreachable: for_all_fvars returns before this for every node without free variables, and these have none"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "if Hashtbl.mem st.c.eq_fail key then false",
+  "from": "false",
+  "to": "true",
+  "why": "OPEN, not understood yet: the failure cache of the lazy delta same-arguments shortcut (the kernel's failed_before). Showing it matters needs two different outer comparisons reaching the same pair after a non-fatal failure; no such test exists"
  }
 ]

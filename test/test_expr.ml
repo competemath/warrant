@@ -62,6 +62,28 @@ let prop_for_all_fvars =
       List.for_all (fun k -> E.for_all_fvars (fun i -> i <> k) e = not (List.mem k fvs)) [ 1; 2; 3 ]
       && E.for_all_fvars (fun _ -> false) e = (fvs = []))
 
+(* the loose-bound-variable test agrees with a plain traversal, on terms that share subterms *)
+let rec true_has_loose (e : E.t) i =
+  match e.node with
+  | E.BVar j -> j = i
+  | E.App (a, b) -> true_has_loose a i || true_has_loose b i
+  | E.Lam (d, b) | E.Pi (d, b) -> true_has_loose d i || true_has_loose b (i + 1)
+  | E.Let (t, v, b) -> true_has_loose t i || true_has_loose v i || true_has_loose b (i + 1)
+  | E.Proj (_, _, s) -> true_has_loose s i
+  | _ -> false
+
+let gen_shared depth =
+  (* the same subterm used twice, so the traversal meets a node it has already visited *)
+  let open QCheck.Gen in
+  map2
+    (fun e k -> E.app (E.app (E.const n []) e) (if k then e else E.app e e))
+    (gen_expr depth) bool
+
+let prop_has_loose_bvar =
+  QCheck.Test.make ~count:2000 ~name:"has_loose_bvar agrees with a traversal"
+    (QCheck.make ~print:E.to_string (gen_shared 3))
+    (fun e -> List.for_all (fun i -> E.has_loose_bvar e i = true_has_loose e i) [ 0; 1; 2; 3 ])
+
 (* abstracting then instantiating the same free variables gives the term back *)
 let prop_roundtrip =
   QCheck.Test.make ~count:2000 ~name:"instantiate_rev (abstract e ids) fvars = e"
@@ -91,5 +113,11 @@ let () =
         ] );
       ( "laws",
         List.map QCheck_alcotest.to_alcotest
-          [ prop_lbr; prop_roundtrip; prop_instantiate_closed; prop_for_all_fvars ] );
+          [
+            prop_lbr;
+            prop_roundtrip;
+            prop_instantiate_closed;
+            prop_for_all_fvars;
+            prop_has_loose_bvar;
+          ] );
     ]
