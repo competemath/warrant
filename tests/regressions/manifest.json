@@ -977,6 +977,188 @@
    "why": "f := fun _ => 0: f 1 = f 2 holds. t1 asks it under a beta redex (the arguments differ, then the unfoldings agree), t2 asks it directly afterwards. The checker once refused t2."
   },
   {
+   "path": "nat-big-add-2345-6445.ndjson",
+   "expect": "accept",
+   "why": "Nat.add on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-add-2345-6446.ndjson",
+   "expect": "reject",
+   "why": "Nat.add on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-sub-4100-1755.ndjson",
+   "expect": "accept",
+   "why": "Nat.sub on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-sub-4100-1756.ndjson",
+   "expect": "reject",
+   "why": "Nat.sub on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-sub-2345-0.ndjson",
+   "expect": "accept",
+   "why": "Nat.sub on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-sub-2345-1.ndjson",
+   "expect": "reject",
+   "why": "Nat.sub on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-mul-2345-4500.ndjson",
+   "expect": "accept",
+   "why": "Nat.mul on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-mul-2345-4501.ndjson",
+   "expect": "reject",
+   "why": "Nat.mul on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-div-2345-0.ndjson",
+   "expect": "accept",
+   "why": "Nat.div on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-div-2345-1.ndjson",
+   "expect": "reject",
+   "why": "Nat.div on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-mod-2345-2345.ndjson",
+   "expect": "accept",
+   "why": "Nat.mod on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-mod-2345-2346.ndjson",
+   "expect": "reject",
+   "why": "Nat.mod on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-mod-2345-5.ndjson",
+   "expect": "accept",
+   "why": "Nat.mod on operands of about 100 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-mod-2345-6.ndjson",
+   "expect": "reject",
+   "why": "Nat.mod on operands of about 100 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-gcd-9824-576.ndjson",
+   "expect": "accept",
+   "why": "Nat.gcd on operands of about 122 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-gcd-9824-577.ndjson",
+   "expect": "reject",
+   "why": "Nat.gcd on operands of about 122 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-land-2345-5408.ndjson",
+   "expect": "accept",
+   "why": "Nat.land on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-land-2345-5409.ndjson",
+   "expect": "reject",
+   "why": "Nat.land on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-lor-2345-1037.ndjson",
+   "expect": "accept",
+   "why": "Nat.lor on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-lor-2345-1038.ndjson",
+   "expect": "reject",
+   "why": "Nat.lor on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-xor-2345-5629.ndjson",
+   "expect": "accept",
+   "why": "Nat.xor on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-xor-2345-5630.ndjson",
+   "expect": "reject",
+   "why": "Nat.xor on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-shiftleft-2345-9280.ndjson",
+   "expect": "accept",
+   "why": "Nat.shiftLeft on operands of about 100 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-shiftleft-2345-9281.ndjson",
+   "expect": "reject",
+   "why": "Nat.shiftLeft on operands of about 100 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-shiftright-2345-2947.ndjson",
+   "expect": "accept",
+   "why": "Nat.shiftRight on operands of about 100 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-shiftright-2345-2948.ndjson",
+   "expect": "reject",
+   "why": "Nat.shiftRight on operands of about 100 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-pow-3-8001.ndjson",
+   "expect": "accept",
+   "why": "Nat.pow on operands of about 9 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-pow-3-8002.ndjson",
+   "expect": "reject",
+   "why": "Nat.pow on operands of about 9 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "quot-lift-same-universe-twice.ndjson",
+   "expect": "reject",
+   "why": "Quot.lift.{u, u}: the two universe parameters must be different names (the quotient's and the target's).",
+   "msg": "quotient: wrong universe parameters"
+  },
+  {
+   "path": "constructor-other-universe-parameters.ndjson",
+   "expect": "reject",
+   "why": "T : Type has no universe parameters and T.mk is declared with one (w). The constructor and its type share their parameters.",
+   "msg": "universe parameters differ"
+  },
+  {
+   "path": "two-argument-identity-not-an-annotation.ndjson",
+   "expect": "accept",
+   "why": "myConst2.{u} (a : Sort u) (x : a) : Sort u := a returns its first argument like optParam and autoParam, but it is neither: the field `myConst2 Nat 0` is kept as it is (found by mutation testing, as for the one-argument case)."
+  },
+  {
+   "path": "recursive-structure-no-eta.ndjson",
+   "expect": "reject",
+   "why": "T := mk (T) is a type with one constructor and no index but it is recursive; x = T.mk x.1 does not hold for an axiom x : T. Structure eta is for structures that are not recursive (found by mutation testing: nothing checked the condition).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "mdata-is-transparent.ndjson",
+   "expect": "accept",
+   "why": "an axiom d whose type is a metadata node around Prop (Sort 0): the node is read through. A mutation that read another key declined every file with metadata (found by mutation testing: no test file had a metadata node)."
+  },
+  {
    "path": "work-budget-exhausted.ndjson",
    "expect": "decline",
    "why": "the same file as nat-log2-literal, run with a work budget of 10 steps (WARRANT_FUEL): the checker declines and says why. With its normal budget (400 million steps) the file is accepted. A budget can turn an accept into a decline, never a decline into an accept.",

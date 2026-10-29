@@ -2169,6 +2169,137 @@ add(
     "it directly afterwards. The checker once refused t2.",
 )
 
+# Operands too large to be unfolded: only the shortcut can decide these, whatever the operation (a mutation that changed the name an
+# operation is known by left small cases to the unfolding and went unnoticed)
+BIG = 10**30 + 12345
+BIG2 = 7**40 + 99
+for op, x, y, res in [
+    ("Nat.add", BIG, BIG2, BIG + BIG2),
+    ("Nat.sub", BIG2, BIG, BIG2 - BIG),
+    ("Nat.sub", BIG, BIG2, 0),
+    ("Nat.mul", BIG, BIG2, BIG * BIG2),
+    ("Nat.div", BIG, BIG2, BIG // BIG2),
+    ("Nat.mod", BIG, BIG2, BIG % BIG2),
+    ("Nat.mod", BIG, 7, BIG % 7),
+    ("Nat.gcd", 2**90 * 3**20, 2**80 * 3**25 * 5, 2**80 * 3**20),
+    ("Nat.land", BIG, BIG2, BIG & BIG2),
+    ("Nat.lor", BIG, BIG2, BIG | BIG2),
+    ("Nat.xor", BIG, BIG2, BIG ^ BIG2),
+    ("Nat.shiftLeft", BIG, 70, BIG << 70),
+    ("Nat.shiftRight", BIG, 70, BIG >> 70),
+    ("Nat.pow", 3, 400, 3**400),
+]:
+    for claimed, expect in [(res, "accept"), (res + 1, "reject")]:
+        nat_def(
+            f"nat-big-{op.split('.')[1].lower()}-{x % 10000}-{claimed % 10000}",
+            N(op, x, y),
+            claimed,
+            expect,
+            f"{op} on operands of about {max(x, y).bit_length()} bits: unfolding the definition would take more steps than the "
+            "checker's budget, so the shortcut for the operation must decide it"
+            + ("." if expect == "accept" else ", and the claim is one more than the result."),
+        )
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Mutation round 3g
+
+# Quot.lift with the same universe parameter twice
+b = base("Eq", "Nat")
+b.quot("lift", "Quot.lift", ["u", "u"], ("sort", ONE))
+refuse(
+    "quot-lift-same-universe-twice",
+    b.text(),
+    "Quot.lift.{u, u}: the two universe parameters must be different names (the quotient's and the target's).",
+    "quotient: wrong universe parameters",
+)
+
+# a constructor whose universe parameters are not the type's
+b = base("Nat")
+one_field_block(b, NAT, NAT, lambda types, ctors, recs: ctors[0].update(lparams=["w"]))
+add(
+    "constructor-other-universe-parameters.ndjson",
+    b.text(),
+    "reject",
+    "T : Type has no universe parameters and T.mk is declared with one (w). The constructor and its type share their parameters.",
+    msg="universe parameters differ",
+)
+
+# an identity-like function of two arguments that is not optParam/autoParam is not stripped
+b = base("Nat")
+b.definition(
+    "myConst2",
+    ["u"],
+    ("pi", ("sort", ("param", "u")), ("pi", ("bvar", 0), ("sort", ("param", "u")))),
+    ("lam", ("sort", ("param", "u")), ("lam", ("bvar", 0), ("bvar", 1))),
+)
+one_field_block(
+    b,
+    _app(("const", "myConst2", [ONE]), NAT, ("nat", 0)),
+    _app(("const", "myConst2", [ONE]), NAT, ("nat", 0)),
+)
+add(
+    "two-argument-identity-not-an-annotation.ndjson",
+    b.text(),
+    "accept",
+    "myConst2.{u} (a : Sort u) (x : a) : Sort u := a returns its first argument like optParam and autoParam, but it is neither: "
+    "the field `myConst2 Nat 0` is kept as it is (found by mutation testing, as for the one-argument case).",
+)
+
+# structure eta is for structures that are not recursive
+b = base("Eq", "Eq.refl")
+TT = ("const", "T", [])
+mk_c = ("const", "T.mk", [])
+motive_r = ("pi", TT, SU)
+minor_r = tele("pin", [("a", TT), ("ih", _app(V("m"), V("a")))], _app(V("m"), _app(mk_c, V("a"))))
+head_r = [("m", motive_r), ("mk", minor_r)]
+rec_r = lambda *a: _app(("const", "T.rec", [("param", "u")]), V("m"), V("mk"), *a)  # noqa: E731
+b.inductive(
+    [{"name": "T", "type": ("sort", ONE), "num_params": 0, "ctors": ["T.mk"], "is_rec": True}],
+    [{"name": "T.mk", "induct": "T", "type": ("pi", TT, TT), "cidx": 0, "num_params": 0, "num_fields": 1}],
+    [
+        {
+            "name": "T.rec",
+            "lparams": ["u"],
+            "type": db(tele("pin", head_r + [("t", TT)], _app(V("m"), V("t"))), []),
+            "num_params": 0,
+            "num_motives": 1,
+            "num_minors": 1,
+            "rules": [
+                (
+                    "T.mk",
+                    1,
+                    db(tele("lamn", head_r + [("a", TT)], _app(V("mk"), V("a"), rec_r(V("a")))), []),
+                )
+            ],
+        }
+    ],
+)
+b.axiom("x", [], TT)
+b.theorem(
+    "t",
+    [],
+    _app(("const", "Eq", [ONE]), TT, ("const", "x", []), _app(mk_c, ("proj", "T", 0, ("const", "x", [])))),
+    _app(("const", "Eq.refl", [ONE]), TT, ("const", "x", [])),
+)
+add(
+    "recursive-structure-no-eta.ndjson",
+    b.text(),
+    "reject",
+    "T := mk (T) is a type with one constructor and no index but it is recursive; x = T.mk x.1 does not hold for an axiom x : T. "
+    "Structure eta is for structures that are not recursive (found by mutation testing: nothing checked the condition).",
+    msg="the value does not have the declared type",
+)
+
+# a metadata node is read through
+add(
+    "mdata-is-transparent.ndjson",
+    head + '\n{"ie":0,"sort":0}\n{"ie":1,"mdata":{"expr":0,"data":{}}}\n{"in":1,"str":{"pre":0,"str":"d"}}\n'
+    '{"axiom":{"name":1,"levelParams":[],"type":1,"isUnsafe":false}}\n',
+    "accept",
+    "an axiom d whose type is a metadata node around Prop (Sort 0): the node is read through. A mutation that read another key "
+    "declined every file with metadata (found by mutation testing: no test file had a metadata node).",
+)
+
 # the checker's own work budget and its caches
 b = Builder.extending(prims)
 b.axiom("T", [], ("pi", NAT, ("sort", ONE)))
@@ -2340,4 +2471,9 @@ with open(os.path.join(OUT, "manifest.json"), "w", encoding="utf-8") as f:
         indent=1,
     )
     f.write("\n")
+# a file no entry names is a leftover of an earlier version of this script
+listed = {e["path"] for e in files} | {"manifest.json"}
+for leftover in sorted(set(os.listdir(OUT)) - listed):
+    os.remove(os.path.join(OUT, leftover))
+    print("removed leftover", leftover)
 print(len(files), "regressions")
