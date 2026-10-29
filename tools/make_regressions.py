@@ -1729,6 +1729,70 @@ add(
     msg="number of parameters mismatch",
 )
 
+
+# each quotient declaration needs the ones it mentions: the declaration of the needed one is removed from a real cut
+def without_quot(target, kind_removed):
+    with open(PRELUDE_PATH, encoding="utf-8") as f:
+        cut = slice_lines(f, [target, "Eq", "Eq.refl"])
+    kept = [ln for ln in cut if not ('"quot"' in ln and json.loads(ln)["quot"]["kind"] == kind_removed)]
+    assert len(kept) == len(cut) - 1, (target, kind_removed)
+    return "\n".join(kept) + "\n"
+
+
+for target, removed, needs, why in [
+    ("Quot.mk", "type", "Quot.mk needs Quot", "Quot.mk declared without Quot"),
+    ("Quot.ind", "ctor", "Quot.ind needs Quot.mk", "Quot.ind declared without Quot.mk"),
+]:
+    add(
+        f"quot-{target.split('.')[1]}-without-{removed}.ndjson",
+        without_quot(target, removed),
+        "reject",
+        why
+        + ": each quotient declaration needs the ones its type mentions (found by mutation testing: the checks of the "
+        "order were never reached).",
+        msg=needs,
+    )
+with open(PRELUDE_PATH, encoding="utf-8") as f:
+    lift_cut = slice_lines(f, ["Quot.lift"])
+if not any('"quot"' in ln and json.loads(ln)["quot"]["kind"] == "ctor" for ln in lift_cut):
+    add(
+        "quot-lift-without-ctor.ndjson",
+        "\n".join(lift_cut) + "\n",
+        "reject",
+        "Quot.lift declared with Quot but without Quot.mk (the cut of Quot.lift from a real export has no Quot.mk): the lift rule "
+        "computes on Quot.mk, so it is needed first.",
+        msg="Quot.lift needs Quot.mk",
+    )
+
+# the recursor's claimed counts must be the derived ones, one by one
+for field, value, why in [
+    ("num_params", 1, "one parameter more than the type has"),
+    ("num_indices", 1, "one index more than the type has"),
+    ("num_motives", 2, "two motives for a single type"),
+    ("num_minors", 2, "two minor premises for a single constructor"),
+]:
+    b = base("Nat")
+    one_field_block(b, NAT, NAT, lambda types, ctors, recs, f=field, v=value: recs[0].update({f: v}))
+    add(
+        f"rec-claims-wrong-{field.replace('_', '-')}.ndjson",
+        b.text(),
+        "reject",
+        f"T.rec claimed with {why}: the counts are claims, compared with the derived ones one by one (found by mutation "
+        "testing: a comparison of the motive count alone could be dropped unnoticed).",
+        msg="counts differ",
+    )
+
+# a constructor whose result is not its type
+b = base("Nat")
+one_field_block(b, NAT, NAT, lambda types, ctors, recs: ctors[0].update(type=("pi", NAT, NAT)))
+add(
+    "constructor-wrong-return-type.ndjson",
+    b.text(),
+    "reject",
+    "T.mk : Nat -> Nat, a constructor of T whose result is Nat. Found by mutation testing: nothing else reached the check.",
+    msg="invalid return type",
+)
+
 # the checker's own work budget and its caches
 b = Builder.extending(prims)
 b.axiom("T", [], ("pi", NAT, ("sort", ONE)))

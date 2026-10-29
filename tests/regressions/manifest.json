@@ -880,6 +880,54 @@
    "msg": "number of parameters mismatch"
   },
   {
+   "path": "quot-mk-without-type.ndjson",
+   "expect": "reject",
+   "why": "Quot.mk declared without Quot: each quotient declaration needs the ones its type mentions (found by mutation testing: the checks of the order were never reached).",
+   "msg": "Quot.mk needs Quot"
+  },
+  {
+   "path": "quot-ind-without-ctor.ndjson",
+   "expect": "reject",
+   "why": "Quot.ind declared without Quot.mk: each quotient declaration needs the ones its type mentions (found by mutation testing: the checks of the order were never reached).",
+   "msg": "Quot.ind needs Quot.mk"
+  },
+  {
+   "path": "quot-lift-without-ctor.ndjson",
+   "expect": "reject",
+   "why": "Quot.lift declared with Quot but without Quot.mk (the cut of Quot.lift from a real export has no Quot.mk): the lift rule computes on Quot.mk, so it is needed first.",
+   "msg": "Quot.lift needs Quot.mk"
+  },
+  {
+   "path": "rec-claims-wrong-num-params.ndjson",
+   "expect": "reject",
+   "why": "T.rec claimed with one parameter more than the type has: the counts are claims, compared with the derived ones one by one (found by mutation testing: a comparison of the motive count alone could be dropped unnoticed).",
+   "msg": "counts differ"
+  },
+  {
+   "path": "rec-claims-wrong-num-indices.ndjson",
+   "expect": "reject",
+   "why": "T.rec claimed with one index more than the type has: the counts are claims, compared with the derived ones one by one (found by mutation testing: a comparison of the motive count alone could be dropped unnoticed).",
+   "msg": "counts differ"
+  },
+  {
+   "path": "rec-claims-wrong-num-motives.ndjson",
+   "expect": "reject",
+   "why": "T.rec claimed with two motives for a single type: the counts are claims, compared with the derived ones one by one (found by mutation testing: a comparison of the motive count alone could be dropped unnoticed).",
+   "msg": "counts differ"
+  },
+  {
+   "path": "rec-claims-wrong-num-minors.ndjson",
+   "expect": "reject",
+   "why": "T.rec claimed with two minor premises for a single constructor: the counts are claims, compared with the derived ones one by one (found by mutation testing: a comparison of the motive count alone could be dropped unnoticed).",
+   "msg": "counts differ"
+  },
+  {
+   "path": "constructor-wrong-return-type.ndjson",
+   "expect": "reject",
+   "why": "T.mk : Nat -> Nat, a constructor of T whose result is Nat. Found by mutation testing: nothing else reached the check.",
+   "msg": "invalid return type"
+  },
+  {
    "path": "work-budget-exhausted.ndjson",
    "expect": "decline",
    "why": "the same file as nat-log2-literal, run with a work budget of 10 steps (WARRANT_FUEL): the checker declines and says why. With its normal budget (400 million steps) the file is accepted. A budget can turn an accept into a decline, never a decline into an accept.",
