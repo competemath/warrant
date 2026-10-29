@@ -3019,6 +3019,38 @@ add(
     msg="the value does not have the declared type",
 )
 
+# an unsafe opaque constant may mention unsafe constants in its type
+b = Builder()
+b.axiom("U1", [], ("sort", ONE), unsafe=True)
+b.opaque("o", [], ("const", "U1", []), ("const", "U1", []))
+op_lines = []
+for ln in b.lines:
+    o = json.loads(ln)
+    if "opaque" in o:
+        o["opaque"]["isUnsafe"] = True
+        ln = json.dumps(o, separators=(",", ":"), sort_keys=True)
+    op_lines.append(ln)
+add(
+    "unsafe-opaque-type-mentions-unsafe.ndjson",
+    "\n".join(op_lines) + "\n",
+    "accept",
+    "unsafe axiom U1 : Type and unsafe opaque o : U1: the type of an unsafe opaque constant is checked with unsafe constants allowed "
+    "(found by mutation testing, as for unsafe axioms and definitions).",
+)
+
+# a constructor field whose type is ill-typed
+b = base("Nat", "List")
+bad_field = _app(("const", "List", [0]), ("sort", ("succ", ("succ", ("succ", 0)))))
+one_field_block(b, bad_field, bad_field)
+add(
+    "constructor-field-ill-typed.ndjson",
+    b.text(),
+    "reject",
+    "T.mk : List.{0} (Sort 3) -> T: the field's type applies List to something that is not a Type 0. Two checks look at it (the whole "
+    "constructor type, and the sort of the field); the file must be refused if either one is there.",
+    msg="application type mismatch",
+)
+
 # the checker's own work budget and its caches
 b = Builder.extending(prims)
 b.axiom("T", [], ("pi", NAT, ("sort", ONE)))

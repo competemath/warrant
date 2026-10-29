@@ -1524,6 +1524,17 @@
    "msg": "the value does not have the declared type"
   },
   {
+   "path": "unsafe-opaque-type-mentions-unsafe.ndjson",
+   "expect": "accept",
+   "why": "unsafe axiom U1 : Type and unsafe opaque o : U1: the type of an unsafe opaque constant is checked with unsafe constants allowed (found by mutation testing, as for unsafe axioms and definitions)."
+  },
+  {
+   "path": "constructor-field-ill-typed.ndjson",
+   "expect": "reject",
+   "why": "T.mk : List.{0} (Sort 3) -> T: the field's type applies List to something that is not a Type 0. Two checks look at it (the whole constructor type, and the sort of the field); the file must be refused if either one is there.",
+   "msg": "application type mismatch"
+  },
+  {
    "path": "work-budget-exhausted.ndjson",
    "expect": "decline",
    "why": "the same file as nat-log2-literal, run with a work budget of 10 steps (WARRANT_FUEL): the checker declines and says why. With its normal budget (400 million steps) the file is accepted. A budget can turn an accept into a decline, never a decline into an accept.",
