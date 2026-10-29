@@ -2588,6 +2588,60 @@ for fname, lines, msg_, why in [
         msg=msg_,
     )
 
+# a recursor in the file that is not the recursor of any type of the block
+b = base("Nat")
+
+
+def add_extra_recursor(types, ctors, recs):
+    extra = dict(recs[0])
+    extra["name"] = "T.extra"
+    recs.append(extra)
+
+
+one_field_block(b, NAT, NAT, add_extra_recursor)
+add(
+    "extra-recursor-in-block.ndjson",
+    b.text(),
+    "reject",
+    "T with its recursor and a second recursor named T.extra that no type of the block has (found by mutation testing: the "
+    "comparison went the other way only, every derived recursor must be in the file, but not every recursor of the file derived).",
+    msg="is not the recursor of any type of its block",
+)
+
+# an occurrence of the type being defined with other parameters than its own
+b = base("Nat")
+PA = ("pi", ("sort", ONE), ("sort", ONE))
+b.inductive(
+    [{"name": "P", "type": PA, "num_params": 1, "ctors": ["P.mk"]}],
+    [
+        {
+            "name": "P.mk",
+            "induct": "P",
+            "type": db(
+                tele(
+                    "pin",
+                    [("A", ("sort", ONE)), ("x", _app(("const", "P", []), NAT))],
+                    _app(("const", "P", []), V("A")),
+                ),
+                [],
+            ),
+            "cidx": 0,
+            "num_params": 1,
+            "num_fields": 1,
+        }
+    ],
+    [],
+)
+add(
+    "occurrence-with-other-parameters.ndjson",
+    b.text(),
+    "reject",
+    "P (A : Type) : Type with P.mk : P Nat -> P A: the recursive occurrence has the parameter Nat, not the parameter A. Only the "
+    "same parameters are allowed (found by mutation testing: a check that every parameter of an occurrence is the type's own "
+    "could be dropped unnoticed).",
+    msg="invalid occurrence",
+)
+
 # the checker's own work budget and its caches
 b = Builder.extending(prims)
 b.axiom("T", [], ("pi", NAT, ("sort", ONE)))

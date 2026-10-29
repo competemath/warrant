@@ -1239,6 +1239,18 @@
    "msg": "not valid JSON"
   },
   {
+   "path": "extra-recursor-in-block.ndjson",
+   "expect": "reject",
+   "why": "T with its recursor and a second recursor named T.extra that no type of the block has (found by mutation testing: the comparison went the other way only, every derived recursor must be in the file, but not every recursor of the file derived).",
+   "msg": "is not the recursor of any type of its block"
+  },
+  {
+   "path": "occurrence-with-other-parameters.ndjson",
+   "expect": "reject",
+   "why": "P (A : Type) : Type with P.mk : P Nat -> P A: the recursive occurrence has the parameter Nat, not the parameter A. Only the same parameters are allowed (found by mutation testing: a check that every parameter of an occurrence is the type's own could be dropped unnoticed).",
+   "msg": "invalid occurrence"
+  },
+  {
    "path": "work-budget-exhausted.ndjson",
    "expect": "decline",
    "why": "the same file as nat-log2-literal, run with a work budget of 10 steps (WARRANT_FUEL): the checker declines and says why. With its normal budget (400 million steps) the file is accepted. A budget can turn an accept into a decline, never a decline into an accept.",
