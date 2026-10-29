@@ -2300,6 +2300,55 @@ add(
     "declined every file with metadata (found by mutation testing: no test file had a metadata node).",
 )
 
+# structure eta is not applied to structures that are propositions (as in the official kernel)
+b = base("And", "And.rec", "Nat", "Eq", "Eq.refl")
+b.axiom("P", [], PROP)
+b.axiom("Q", [], PROP)
+and_pq = _app(("const", "And", []), ("const", "P", []), ("const", "Q", []))
+b.axiom("x", [], and_pq)
+rec_and = _app(
+    ("const", "And.rec", [ONE]),
+    ("const", "P", []),
+    ("const", "Q", []),
+    ("lam", and_pq, NAT),
+    ("lam", ("const", "P", []), ("lam", ("const", "Q", []), ("nat", 5))),
+    ("const", "x", []),
+)
+b.theorem(
+    "t",
+    [],
+    _app(("const", "Eq", [ONE]), NAT, rec_and, ("nat", 5)),
+    _app(("const", "Eq.refl", [ONE]), NAT, ("nat", 5)),
+)
+add(
+    "prop-structure-no-eta.ndjson",
+    b.text(),
+    "reject",
+    "And.rec (fun _ _ => 5) x for an axiom x : P /\\ Q is stuck: the stuck major premise of a recursor is replaced by the "
+    "constructor applied to its projections only for structures that are not propositions (the official kernel's rule). A "
+    "mutation that did it for propositions too accepted the claim that this is 5 (found by mutation testing).",
+    msg="the value does not have the declared type",
+)
+
+# a constructor of one type of a mutual block that returns another type of the block
+b = Builder()
+b.inductive(
+    [
+        {"name": "A", "type": ("sort", ONE), "num_params": 0, "ctors": ["A.mk"]},
+        {"name": "B", "type": ("sort", ONE), "num_params": 0},
+    ],
+    [{"name": "A.mk", "induct": "A", "type": B, "cidx": 0, "num_params": 0, "num_fields": 0}],
+    [],
+)
+add(
+    "mutual-constructor-returns-the-other-type.ndjson",
+    b.text(),
+    "reject",
+    "A.mk : B, a constructor of A that returns the other type of the block (found by mutation testing: the result must be the "
+    "constructor's own type, not just a type of the block).",
+    msg="invalid return type",
+)
+
 # the checker's own work budget and its caches
 b = Builder.extending(prims)
 b.axiom("T", [], ("pi", NAT, ("sort", ONE)))

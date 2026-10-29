@@ -1098,7 +1098,3 @@ let end_decl () =
       end)
     cache_tbl;
   if Hashtbl.length Fingerprint.memo > 1_000_000 then Hashtbl.reset Fingerprint.memo
-
-let run_with_fuel f =
-  fuel := default_fuel;
-  f ()

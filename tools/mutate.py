@@ -160,6 +160,8 @@ def run_stages(work, args):
         )
     )
     stages.append(("unit", "dune test --force --profile release"))
+    if args.stages:
+        stages = [(n, c) for n, c in stages if n in args.stages.split(",")]
     for stage, cmd in stages:
         res = sh(cmd, work, timeout=1200)
         if res.returncode != 0:
@@ -189,6 +191,11 @@ def main():
         "--only",
         default=None,
         help="JSON list of {file, context, from, to}: try just these (survivors of an earlier run)",
+    )
+    ap.add_argument(
+        "--stages",
+        default=None,
+        help="only these stages (bad,regressions,arena,forge,unit; comma-separated): to try survivors of an earlier run against new tests",
     )
     ap.add_argument("--no-baseline", action="store_true", help="skip the run of the tests on the unmutated tree")
     ap.add_argument("--jobs", type=int, default=4, help="files run side by side in each stage")

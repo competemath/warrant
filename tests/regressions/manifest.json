@@ -1159,6 +1159,18 @@
    "why": "an axiom d whose type is a metadata node around Prop (Sort 0): the node is read through. A mutation that read another key declined every file with metadata (found by mutation testing: no test file had a metadata node)."
   },
   {
+   "path": "prop-structure-no-eta.ndjson",
+   "expect": "reject",
+   "why": "And.rec (fun _ _ => 5) x for an axiom x : P /\\ Q is stuck: the stuck major premise of a recursor is replaced by the constructor applied to its projections only for structures that are not propositions (the official kernel's rule). A mutation that did it for propositions too accepted the claim that this is 5 (found by mutation testing).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "mutual-constructor-returns-the-other-type.ndjson",
+   "expect": "reject",
+   "why": "A.mk : B, a constructor of A that returns the other type of the block (found by mutation testing: the result must be the constructor's own type, not just a type of the block).",
+   "msg": "invalid return type"
+  },
+  {
    "path": "work-budget-exhausted.ndjson",
    "expect": "decline",
    "why": "the same file as nat-log2-literal, run with a work budget of 10 steps (WARRANT_FUEL): the checker declines and says why. With its normal budget (400 million steps) the file is accepted. A budget can turn an accept into a decline, never a decline into an accept.",
