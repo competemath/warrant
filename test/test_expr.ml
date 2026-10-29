@@ -19,6 +19,7 @@ let rec gen_expr depth =
         (2, map2 E.lam (gen_expr (depth - 1)) (gen_expr (depth - 1)));
         (1, map2 E.pi (gen_expr (depth - 1)) (gen_expr (depth - 1)));
         (1, map3 E.let_ (gen_expr (depth - 1)) (gen_expr (depth - 1)) (gen_expr (depth - 1)));
+        (1, map (fun e -> E.proj n 0 e) (gen_expr (depth - 1)));
       ]
 
 let arb = QCheck.make ~print:E.to_string (gen_expr 4)
@@ -84,13 +85,15 @@ let prop_has_loose_bvar =
     (QCheck.make ~print:E.to_string (gen_shared 3))
     (fun e -> List.for_all (fun i -> E.has_loose_bvar e i = true_has_loose e i) [ 0; 1; 2; 3 ])
 
-(* exists_const sees every constant, including inside a let *)
+(* exists_const sees every constant, including inside a let. The type name of a projection is not a constant of the term
+   (Lean's kernel looks for occurrences with the same traversal): a term whose struct is well typed mentions that type
+   somewhere else anyway; Expr.consts, which the fingerprints use, does count it. *)
 let rec true_consts (e : E.t) =
   match e.node with
   | E.Const (c, _) -> [ c ]
   | E.App (a, b) | E.Lam (a, b) | E.Pi (a, b) -> true_consts a @ true_consts b
   | E.Let (t, v, b) -> true_consts t @ true_consts v @ true_consts b
-  | E.Proj (s, _, x) -> s :: true_consts x
+  | E.Proj (_, _, x) -> true_consts x
   | _ -> []
 
 let d = Name.of_dotted "d"

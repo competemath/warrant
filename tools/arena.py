@@ -19,6 +19,7 @@ import json
 import os
 import subprocess
 import sys
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
@@ -73,18 +74,36 @@ def main():
     ap.add_argument(
         "--filter", action="append", default=[], help="only the entries whose path contains this (repeatable)"
     )
+    ap.add_argument(
+        "--exclude", action="append", default=[], help="leave out the entries whose path contains this (repeatable)"
+    )
+    ap.add_argument(
+        "--fail-fast", action="store_true", help="stop starting files after the first failure (the mutation tester)"
+    )
     ap.add_argument("--env", action="append", default=[], help="KEY=VALUE set for every file (repeatable)")
     ap.add_argument("dirs", nargs="+")
     args = ap.parse_args()
     extra_env = dict(kv.split("=", 1) for kv in args.env)
+    stop = threading.Event()
+
+    def one(e, r):
+        if stop.is_set():
+            return {"path": e["path"], "expect": e["expect"], "got": "skipped", "ok": True, "secs": 0, "msg": ""}
+        res = run_one(args.binary, r, e, args.timeout, extra_env)
+        if args.fail_fast and not res["ok"]:
+            stop.set()
+        return res
+
     results = []
     for root in args.dirs:
         with open(os.path.join(root, "manifest.json"), encoding="utf-8") as f:
             entries = json.load(f)["files"]
+        if args.exclude:
+            entries = [e for e in entries if not any(x in e["path"] for x in args.exclude)]
         if args.filter:
             entries = [e for e in entries if any(x in e["path"] for x in args.filter)]
         with ThreadPoolExecutor(max_workers=args.jobs) as pool:
-            results += list(pool.map(lambda e, r=root: run_one(args.binary, r, e, args.timeout, extra_env), entries))
+            results += list(pool.map(lambda e, r=root: one(e, r), entries))
     bad = [r for r in results if not r["ok"]]
     for r in results:
         if not r["ok"] or not args.quiet:

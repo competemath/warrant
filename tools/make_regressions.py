@@ -1479,6 +1479,40 @@ for n, expect in [(14, "accept"), (15, "decline")]:
         msg="universe constraint" if expect == "decline" else None,
     )
 
+# a universe parameter that occurs only in the body of a let (or only in its type and value) in a constant's type is still
+# instantiated when the constant is used
+U = ("param", "u")
+for name, ty_c, expect, why in [
+    (
+        "let-body-universe-parameter",
+        ("let", NAT, ("nat", 0), ("sort", U)),
+        "accept",
+        "c.{u} : let n : Nat := 0 in Sort u, and d : Prop := c.{0}: the type of c.{0} is the let with u replaced by 0, which "
+        "reduces to Prop. A mutation of the cached 'mentions a universe parameter' flag of a let (ignoring the body) left u "
+        "uninstantiated and the claim failed (found by mutation testing).",
+    ),
+    (
+        "let-type-and-value-universe-parameter",
+        ("let", ("sort", ("succ", U)), ("sort", U), ("bvar", 0)),
+        "accept",
+        "e.{u} : let X : Sort (u+1) := Sort u in X, and d : Prop := e.{0}: same, with the parameter in the type and the value.",
+    ),
+]:
+    b = base("Nat")
+    b.axiom("c", ["u"], ty_c)
+    b.definition("d", [], ("sort", 0), ("const", "c", [0]))
+    add(name + ".ndjson", b.text(), expect, why)
+b = base("Nat")
+b.axiom("c", ["u"], ("let", NAT, ("nat", 0), ("sort", U)))
+b.definition("d", [], ("sort", ONE), ("const", "c", [0]))
+add(
+    "let-body-universe-parameter-wrong.ndjson",
+    b.text(),
+    "reject",
+    "the same constant offered as a Type: c.{0} : Prop, not Type.",
+    msg=DEFEQ_MSG,
+)
+
 # the checker's own work budget and its caches
 b = Builder.extending(prims)
 b.axiom("T", [], ("pi", NAT, ("sort", ONE)))

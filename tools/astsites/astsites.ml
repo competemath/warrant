@@ -104,6 +104,29 @@ let () =
         :: !out
   in
   let paren s = "(" ^ s ^ ")" in
+  (* strings that are messages or formats are left alone: the tests pin the message of every refusal separately *)
+  let skip_strings : (int, unit) Hashtbl.t = Hashtbl.create 64 in
+  let message_fns =
+    [
+      "reject";
+      "decline";
+      "malformed";
+      "failwith";
+      "invalid_arg";
+      "sprintf";
+      "eprintf";
+      "printf";
+      "ksprintf";
+      "prerr_endline";
+      "print_endline";
+      "announce";
+    ]
+  in
+  let bool_name n =
+    let starts p = String.length n >= String.length p && String.sub n 0 (String.length p) = p in
+    List.exists starts
+      [ "is_"; "has_"; "can_"; "nat_ok"; "same_"; "closed"; "valid"; "mem"; "equal" ]
+  in
   let is_op (e : expression) names =
     match e.pexp_desc with
     | Pexp_ident { txt = Longident.Lident n; _ } -> List.mem n names
@@ -151,12 +174,23 @@ let () =
         | None -> ())
     | Pexp_apply (f, [ (_, l); (_, r) ]) when is_op f [ "&&"; "||" ] ->
         add "operand-left" e.pexp_loc (paren (sl l.pexp_loc));
-        add "operand-right" e.pexp_loc (paren (sl r.pexp_loc))
+        add "operand-right" e.pexp_loc (paren (sl r.pexp_loc));
+        add "bool-true" e.pexp_loc "true";
+        add "bool-false" e.pexp_loc "false"
     | Pexp_apply (f, [ _; _ ]) when is_op f ops_cmp ->
         add "cmp-true" e.pexp_loc "true";
         add "cmp-false" e.pexp_loc "false"
     | Pexp_apply (f, [ (_, x) ]) when is_op f [ "not" ] ->
         add "not-drop" e.pexp_loc (paren (sl x.pexp_loc))
+    | Pexp_apply
+        ({ pexp_desc = Pexp_ident { txt = Longident.Lident n | Longident.Ldot (_, n); _ }; _ }, args)
+      when List.mem n message_fns ->
+        List.iter
+          (fun (_, (a : expression)) ->
+            match a.pexp_desc with
+            | Pexp_constant _ -> Hashtbl.replace skip_strings a.pexp_loc.loc_start.pos_cnum ()
+            | _ -> ())
+          args
     | Pexp_apply (f, args)
       when (match f.pexp_desc with Pexp_ident _ -> true | _ -> false)
            && (not
@@ -189,6 +223,13 @@ let () =
             add "int-succ" e.pexp_loc (string_of_int (n + 1));
             if n > 0 then add "int-pred" e.pexp_loc (string_of_int (n - 1))
         | None -> ())
+    | Pexp_constant { pconst_desc = Pconst_string (str, _, None); _ }
+      when (not (Hashtbl.mem skip_strings e.pexp_loc.loc_start.pos_cnum))
+           && String.length str >= 1
+           && String.length str <= 80
+           && (not (String.contains str '%'))
+           && not (String.contains str '\n') ->
+        add "str-change" e.pexp_loc ("\"" ^ String.escaped str ^ "~\"")
     | Pexp_construct ({ txt = Longident.Lident "Some"; _ }, Some _) ->
         add "some-none" e.pexp_loc "None"
     | Pexp_construct (lid, _) ->
@@ -225,6 +266,25 @@ let () =
     | _ -> ());
     Ast_iterator.default_iterator.pat self p
   in
-  let it = { Ast_iterator.default_iterator with expr; pat } in
+  let structure_item self (si : structure_item) =
+    (match si.pstr_desc with
+    | Pstr_value (_, vbs) ->
+        List.iter
+          (fun (vb : value_binding) ->
+            match vb.pvb_pat.ppat_desc with
+            | Ppat_var { txt = n; _ } when bool_name n ->
+                let body =
+                  match vb.pvb_expr.pexp_desc with
+                  | Pexp_function (_, _, Pfunction_body b) -> b
+                  | _ -> vb.pvb_expr
+                in
+                add "fun-true" body.pexp_loc "true";
+                add "fun-false" body.pexp_loc "false"
+            | _ -> ())
+          vbs
+    | _ -> ());
+    Ast_iterator.default_iterator.structure_item self si
+  in
+  let it = { Ast_iterator.default_iterator with expr; pat; structure_item } in
   it.structure it str;
   print_string (Yojson.Safe.to_string (`List (List.rev !out)))

@@ -50,9 +50,6 @@ let rec replace_prefix n old nw =
     | Str (p, s) -> str (replace_prefix p old nw) s
     | Num (p, i) -> num (replace_prefix p old nw) i
 
-let rec is_prefix_of p n =
-  p == n || match n.node with Anon -> false | Str (q, _) | Num (q, _) -> is_prefix_of p q
-
 module Tbl = Hashtbl.Make (struct
   type nonrec t = t
 

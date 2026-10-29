@@ -20,6 +20,4 @@ val replace_prefix : t -> t -> t -> t
 (** [replace_prefix n old nw]: [n] with its prefix [old] replaced by [nw] (unchanged when [old] is
     not a prefix). *)
 
-val is_prefix_of : t -> t -> bool
-
 module Tbl : Hashtbl.S with type key = t

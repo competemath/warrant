@@ -109,7 +109,7 @@ def candidates(path):
     return out
 
 
-def ast_candidates(path, work, astsites):
+def ast_candidates(path, work, astsites, kinds=None):
     """Mutations found by tools/astsites: (path, start, end, replacement, line) with offsets in characters."""
     raw = path.read_bytes()
     others = [str(q) for q in sorted((work / "src").glob("*.ml"))]
@@ -117,11 +117,58 @@ def ast_candidates(path, work, astsites):
     cands = []
     ascii_only = raw.isascii()
     for m in json.loads(out):
+        if kinds and not any(m["kind"].startswith(k) for k in kinds):
+            continue
         a, b = m["start"], m["end"]
         if not ascii_only:
             a, b = len(raw[:a].decode("utf-8")), len(raw[:b].decode("utf-8"))
         cands.append((str(path), a, b, m["repl"], m["line"]))
     return cands
+
+
+def run_stages(work, args):
+    """Runs the tests in turn against the build in [work]; (status, why, only_timeouts) with status "killed" at the first
+    stage that fails and "survived" when none does. Stages that failed without naming a file (a crash of the test
+    script itself) are reported with their last lines, so that a broken harness cannot pass for a strong test suite."""
+    binary = work / "_build/default/bin/main.exe"
+    ft = args.file_timeout
+    arena = f"python3 tools/arena.py --binary {binary} --timeout {ft} --jobs {args.jobs} --quiet --fail-fast"
+    stages = [
+        ("bad", f"{arena} --filter bad/ --filter bugs/ tests/arena"),
+        ("regressions", f"{arena} tests/regressions"),
+    ]
+    if not args.fast:
+        stages.append(("arena", f"{arena} --exclude good/perf/ tests/arena"))
+    stages.append(
+        (
+            "forge",
+            f"python3 tools/forge/forge.py --binary {binary} --seconds 15 --seed 5 --out /tmp/mut-forge-{work.name} "
+            "--prelude tests/arena/good/init-prelude.ndjson --inductive-sources "
+            + " ".join(
+                f"tests/arena/good/tutorial/{f}.ndjson"
+                for f in (
+                    "044_natDef",
+                    "045_rbTreeDef",
+                    "069_eqRec",
+                    "121_rTreeRec",
+                    "070_nRec",
+                    "074_existsRec",
+                    "123_accRecType",
+                    "068_punitRec",
+                )
+            ),
+        )
+    )
+    stages.append(("unit", "dune test --force --profile release"))
+    for stage, cmd in stages:
+        res = sh(cmd, work, timeout=1200)
+        if res.returncode != 0:
+            fails = [ln for ln in res.stdout.splitlines() if ln.startswith("FAIL")]
+            if fails:
+                return "killed", f"{stage}: {fails[0][:140]}", all(" got=timeout" in ln for ln in fails)
+            tail = (res.stderr or res.stdout).strip().splitlines()[-1:] or [""]
+            return "killed", f"{stage}: (no file named) {tail[0][:140]}", False
+    return "survived", "", False
 
 
 def main():
@@ -132,6 +179,7 @@ def main():
     ap.add_argument("--files", nargs="*", default=["src/tc.ml", "src/level.ml", "src/ind.ml", "src/quot.ml"])
     ap.add_argument("--out", default="mutants.json")
     ap.add_argument("--mode", choices=["text", "ast", "both"], default="text")
+    ap.add_argument("--kinds", default=None, help="--mode ast: only these kinds of mutation (comma-separated prefixes)")
     ap.add_argument("--astsites", default="_build/default/tools/astsites/astsites.exe")
     ap.add_argument("--allow", default=None, help="JSON list of known equivalent mutants")
     ap.add_argument(
@@ -142,6 +190,7 @@ def main():
         default=None,
         help="JSON list of {file, context, from, to}: try just these (survivors of an earlier run)",
     )
+    ap.add_argument("--no-baseline", action="store_true", help="skip the run of the tests on the unmutated tree")
     ap.add_argument("--jobs", type=int, default=4, help="files run side by side in each stage")
     ap.add_argument(
         "--file-timeout",
@@ -158,7 +207,9 @@ def main():
         if args.mode in ("text", "both"):
             cands += candidates(work / f)
         if args.mode in ("ast", "both"):
-            cands += ast_candidates(work / f, work, str(work / args.astsites))
+            cands += ast_candidates(
+                work / f, work, str(work / args.astsites), args.kinds.split(",") if args.kinds else None
+            )
     if args.only:
         wanted = {
             (w["file"], w["context"], w["from"], w["to"]) for w in json.loads(pathlib.Path(args.only).read_text())
@@ -175,40 +226,23 @@ def main():
     shard, shards = (int(x) for x in args.shard.split("/"))
     cands = [c for k, c in enumerate(cands) if k % shards == shard]
     results = []
-    sh("dune build --profile release 2>&1 | tail -3", work)
+    sh("dune build --profile release ./bin/main.exe 2>&1 | tail -3", work)
+    if not args.no_baseline:
+        status, why, _ = run_stages(work, args)
+        if status != "survived":
+            print(f"the unmutated tree does not pass its own tests ({why}): nothing to learn from mutants", flush=True)
+            return 2
     for path, a, b, rep, lineno in cands[: args.count or None]:
         p = pathlib.Path(path)
         original = p.read_text(encoding="utf-8")
         why, only_timeouts = "", False
         p.write_text(original[:a] + rep + original[b:], encoding="utf-8")
         try:
-            built = sh("dune build --profile release 2>&1", work)
+            built = sh("dune build --profile release ./bin/main.exe 2>&1", work)
             if built.returncode != 0:
                 status = "unviable"
             else:
-                binary = work / "_build/default/bin/main.exe"
-                ft = args.file_timeout
-                stages = [
-                    ("bad", f"python3 tools/arena.py --binary {binary} --timeout {ft} --jobs {args.jobs} --quiet --filter bad/ --filter bugs/ tests/arena"),
-                    ("regressions", f"python3 tools/arena.py --binary {binary} --timeout {ft} --jobs {args.jobs} --quiet tests/regressions"),
-                ]  # fmt: skip
-                if not args.fast:
-                    stages.append(
-                        (
-                            "arena",
-                            f"python3 tools/arena.py --binary {binary} --timeout {ft} --jobs {args.jobs} --quiet tests/arena",
-                        )
-                    )
-                stages.append(("forge", f"python3 tools/forge/forge.py --binary {binary} --seconds 15 --seed 5 --out /tmp/mut-forge-{work.name} --prelude tests/arena/good/init-prelude.ndjson --inductive-sources tests/arena/good/tutorial/044_natDef.ndjson tests/arena/good/tutorial/045_rbTreeDef.ndjson tests/arena/good/tutorial/069_eqRec.ndjson tests/arena/good/tutorial/121_rTreeRec.ndjson tests/arena/good/tutorial/070_nRec.ndjson tests/arena/good/tutorial/074_existsRec.ndjson tests/arena/good/tutorial/123_accRecType.ndjson tests/arena/good/tutorial/068_punitRec.ndjson"))  # fmt: skip
-                stages.append(("unit", "dune test --force --profile release"))
-                status, why, only_timeouts = "survived", "", False
-                for stage, cmd in stages:
-                    res = sh(cmd, work, timeout=1200)
-                    if res.returncode != 0:
-                        fails = [ln for ln in res.stdout.splitlines() if ln.startswith("FAIL")]
-                        status, why = "killed", stage + (": " + fails[0][:140] if fails else "")
-                        only_timeouts = bool(fails) and all(" got=timeout" in ln for ln in fails)
-                        break
+                status, why, only_timeouts = run_stages(work, args)
         except subprocess.TimeoutExpired:
             status, why, only_timeouts = (
                 "killed",

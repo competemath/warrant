@@ -748,6 +748,22 @@
    "msg": "universe constraint"
   },
   {
+   "path": "let-body-universe-parameter.ndjson",
+   "expect": "accept",
+   "why": "c.{u} : let n : Nat := 0 in Sort u, and d : Prop := c.{0}: the type of c.{0} is the let with u replaced by 0, which reduces to Prop. A mutation of the cached 'mentions a universe parameter' flag of a let (ignoring the body) left u uninstantiated and the claim failed (found by mutation testing)."
+  },
+  {
+   "path": "let-type-and-value-universe-parameter.ndjson",
+   "expect": "accept",
+   "why": "e.{u} : let X : Sort (u+1) := Sort u in X, and d : Prop := e.{0}: same, with the parameter in the type and the value."
+  },
+  {
+   "path": "let-body-universe-parameter-wrong.ndjson",
+   "expect": "reject",
+   "why": "the same constant offered as a Type: c.{0} : Prop, not Type.",
+   "msg": "the value does not have the declared type"
+  },
+  {
    "path": "work-budget-exhausted.ndjson",
    "expect": "decline",
    "why": "the same file as nat-log2-literal, run with a work budget of 10 steps (WARRANT_FUEL): the checker declines and says why. With its normal budget (400 million steps) the file is accepted. A budget can turn an accept into a decline, never a decline into an accept.",
