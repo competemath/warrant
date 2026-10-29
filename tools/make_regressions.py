@@ -1793,6 +1793,124 @@ add(
     msg="invalid return type",
 )
 
+# An Eq that the quotient rules do not accept although it is an inductive family of the right type: the check compares more
+# than the type of Eq. Both are built with their recursors, as the checker derives them (so that nothing else about the file is
+# wrong); the second part of the quotient package is declared after them.
+SV = ("sort", ("param", "v"))
+SU = ("sort", ("param", "u"))
+EQ_V = lambda *a: _app(("const", "Eq", [("param", "v")]), *a)  # noqa: E731
+EQ_REFL_V = lambda *a: _app(("const", "Eq.refl", [("param", "v")]), *a)  # noqa: E731
+eq_type = db(tele("pin", [("A", SV), ("a", V("A")), ("b", V("A"))], PROP), [])
+
+# (1) one parameter and two indices instead of two parameters and one index: Eq.refl : (a : A) -> Eq A a a with `a` a field
+motive_1 = tele("pin", [("a", V("A")), ("b", V("A")), ("t", EQ_V(V("A"), V("a"), V("b")))], SU)
+minor_1 = tele("pin", [("a", V("A"))], _app(V("m"), V("a"), V("a"), EQ_REFL_V(V("A"), V("a"))))
+rec_1 = tele(
+    "pin",
+    [("A", SV), ("m", motive_1), ("r", minor_1), ("a", V("A")), ("b", V("A")), ("t", EQ_V(V("A"), V("a"), V("b")))],
+    _app(V("m"), V("a"), V("b"), V("t")),
+)
+rule_1 = tele("lamn", [("A", SV), ("m", motive_1), ("r", minor_1), ("a", V("A"))], _app(V("r"), V("a")))
+b = Builder()
+b.inductive(
+    [{"name": "Eq", "lparams": ["v"], "type": eq_type, "num_params": 1, "num_indices": 2, "ctors": ["Eq.refl"]}],
+    [
+        {
+            "name": "Eq.refl",
+            "induct": "Eq",
+            "lparams": ["v"],
+            "type": db(tele("pin", [("A", SV), ("a", V("A"))], EQ_V(V("A"), V("a"), V("a"))), []),
+            "cidx": 0,
+            "num_params": 1,
+            "num_fields": 1,
+        }
+    ],
+    [
+        {
+            "name": "Eq.rec",
+            "lparams": ["u", "v"],
+            "type": db(rec_1, []),
+            "num_params": 1,
+            "num_indices": 2,
+            "num_motives": 1,
+            "num_minors": 1,
+            "rules": [("Eq.refl", 1, db(rule_1, []))],
+        }
+    ],
+)
+eq_variant_1 = b.text()
+b.quot("type", "Quot", ["u"], QUOT_TY)
+add(
+    "quot-eq-other-split-of-arguments.ndjson",
+    b.text(),
+    "reject",
+    "Eq with one parameter and two indices (Eq.refl has the field `a`): the same type and the same constructor type as the real Eq, "
+    "another recursor. The quotient rules need the real Eq; the official kernel does not look at the split, WARRANT does (found by "
+    "mutation testing: the two counts could be dropped unnoticed).",
+    msg="quotient: Eq is not the expected inductive family",
+)
+add(
+    "eq-other-split-of-arguments-alone.ndjson",
+    eq_variant_1,
+    "accept",
+    "the control for the previous file: that Eq on its own is a valid inductive family (its recursor is the derived one).",
+)
+
+# (2) the real split, but the constructor's type has a redex in the index: Eq.refl : (A) (a : A) -> Eq A a ((fun x => x) a)
+redex = _app(("lamn", "x", V("A"), V("x")), V("a"))
+motive_2 = tele("pin", [("b", V("A")), ("t", EQ_V(V("A"), V("a"), V("b")))], SU)
+minor_2 = _app(V("m"), redex, EQ_REFL_V(V("A"), V("a")))
+rec_2 = tele(
+    "pin",
+    [("A", SV), ("a", V("A")), ("m", motive_2), ("r", minor_2), ("b", V("A")), ("t", EQ_V(V("A"), V("a"), V("b")))],
+    _app(V("m"), V("b"), V("t")),
+)
+rule_2 = tele("lamn", [("A", SV), ("a", V("A")), ("m", motive_2), ("r", minor_2)], V("r"))
+b = Builder()
+b.inductive(
+    [{"name": "Eq", "lparams": ["v"], "type": eq_type, "num_params": 2, "num_indices": 1, "ctors": ["Eq.refl"]}],
+    [
+        {
+            "name": "Eq.refl",
+            "induct": "Eq",
+            "lparams": ["v"],
+            "type": db(tele("pin", [("A", SV), ("a", V("A"))], EQ_V(V("A"), V("a"), redex)), []),
+            "cidx": 0,
+            "num_params": 2,
+            "num_fields": 0,
+        }
+    ],
+    [
+        {
+            "name": "Eq.rec",
+            "lparams": ["u", "v"],
+            "type": db(rec_2, []),
+            "num_params": 2,
+            "num_indices": 1,
+            "num_motives": 1,
+            "num_minors": 1,
+            "k": True,
+            "rules": [("Eq.refl", 0, db(rule_2, []))],
+        }
+    ],
+)
+eq_variant_2 = b.text()
+b.quot("type", "Quot", ["u"], QUOT_TY)
+add(
+    "quot-eq-refl-type-not-the-expected-one.ndjson",
+    b.text(),
+    "reject",
+    "Eq with the real split whose constructor has the type (A) (a : A) -> Eq A a ((fun x => x) a): the same up to reduction, not "
+    "the type the quotient rules are stated for. A mutation that dropped the comparison of the constructor's type accepted it.",
+    msg="quotient: Eq is not the expected inductive family",
+)
+add(
+    "eq-refl-with-redex-alone.ndjson",
+    eq_variant_2,
+    "accept",
+    "the control for the previous file: that Eq on its own is a valid inductive family.",
+)
+
 # the checker's own work budget and its caches
 b = Builder.extending(prims)
 b.axiom("T", [], ("pi", NAT, ("sort", ONE)))
