@@ -744,6 +744,17 @@
    "msg": "number of parameters differs"
   },
   {
+   "path": "nat-mul-chain-of-squarings-20.ndjson",
+   "expect": "accept",
+   "why": "2^(2^20) has 2^20 + 1 bits; log2 of it is 2^20."
+  },
+  {
+   "path": "nat-mul-chain-of-squarings-29.ndjson",
+   "expect": "decline",
+   "why": "the last square would have 2^29 + 1 bits, past the limit of 2^28: declined, never computed.",
+   "msg": "mul: result too large"
+  },
+  {
    "path": "string-literal-expands.ndjson",
    "expect": "accept",
    "why": "\"ab\" is String.ofList [97, 98]. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check)."

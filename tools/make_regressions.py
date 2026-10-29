@@ -1189,9 +1189,9 @@ for path, decl, why in [
 DEFEQ_MSG = "the value does not have the declared type"
 
 
-def nat_def(name, term, claimed, expect, why, msg=None, env=None):
+def nat_def(name, term, claimed, expect, why, msg=None, env=None, cut=None):
     """`d : T term := t` where `t : T claimed`: accepted exactly when term and claimed are definitionally equal."""
-    b = Builder.extending(prims)
+    b = Builder.extending(slice_lines(prims, cut) if cut else prims)
     b.axiom("T", [], ("pi", NAT, ("sort", ONE)))
     b.axiom("t", [], _app(("const", "T", []), ("nat", claimed)))
     b.definition("d", [], _app(("const", "T", []), term), ("const", "t", []))
@@ -1379,6 +1379,31 @@ add(
     "T has no parameter and T.mk claims one (found by mutation testing).",
     msg="number of parameters differs",
 )
+
+
+# a chain of squarings: let x0 := 2 in let x1 := x0 * x0 in ... Nat.log2 x29. Each step doubles the number of bits; the 29th would
+# have 2^29 + 1. Without a limit on Nat.mul the same chain with 40 steps asks for 128 GB (found by reading the mutation survivors;
+# the checker computed 30 steps of it, 800 MB, and accepted).
+def squarings(levels):
+    body = _app(("const", "Nat.log2", []), ("bvar", 0))
+    for _ in range(levels):
+        body = ("let", NAT, _app(("const", "Nat.mul", []), ("bvar", 0), ("bvar", 0)), body)
+    return ("let", NAT, ("nat", 2), body)
+
+
+for levels, expect, why in [
+    (20, "accept", "2^(2^20) has 2^20 + 1 bits; log2 of it is 2^20"),
+    (29, "decline", "the last square would have 2^29 + 1 bits, past the limit of 2^28: declined, never computed"),
+]:
+    nat_def(
+        f"nat-mul-chain-of-squarings-{levels}",
+        squarings(levels),
+        2**levels,
+        expect,
+        why + ".",
+        msg="mul: result too large" if expect == "decline" else None,
+        cut=["Nat.mul", "Nat.log2"],
+    )
 
 # string literals: the meaning of "ab" is String.ofList [Char.ofNat 97, Char.ofNat 98]
 STRING = ("const", "String", [])
