@@ -31,6 +31,28 @@ let fresh_fvar ?value ty =
 let local_of id =
   match Hashtbl.find_opt lctx id with Some l -> l | None -> reject "unknown free variable %d" id
 
+(* A term is closed up to let-bound variables when each of its free variables stands for a value that is itself closed
+   up to let-bound variables: unfolding them all gives a closed term. Fvar ids are never reused, so the answer for an id
+   never changes. *)
+let valued : (int, bool) Hashtbl.t = Hashtbl.create 256
+
+let rec closed_modulo_lets (e : E.t) =
+  (not e.has_fvar)
+  || E.for_all_fvars
+       (fun id ->
+         match Hashtbl.find_opt valued id with
+         | Some b -> b
+         | None ->
+             (* a variable under test counts as unvalued while its own value is examined (no value mentions it, but
+                this keeps the recursion total) *)
+             Hashtbl.replace valued id false;
+             let b =
+               match (local_of id).lval with Some v -> closed_modulo_lets v | None -> false
+             in
+             Hashtbl.replace valued id b;
+             b)
+       e
+
 (* A cache for results about terms. A term with free variables is cached under the largest free variable it contains:
    when the binder that introduced that variable is closed, the whole table goes, because no later term can contain it. *)
 type 'a cache = { global : (int, 'a) Hashtbl.t; local : (int, (int, 'a) Hashtbl.t) Hashtbl.t }
@@ -61,6 +83,10 @@ type caches = {
   whnf : E.t cache;
   eq_ok : (int * int, unit) Hashtbl.t;
   eq_fail : (int * int, unit) Hashtbl.t;
+  args_fail : (int * int, unit) Hashtbl.t;
+      (** pairs of applications of one function whose arguments were found different: that attempt
+          failed, which says nothing about the pairs themselves (they may agree after unfolding), so
+          it is not [eq_fail] *)
 }
 
 let new_caches () =
@@ -70,6 +96,7 @@ let new_caches () =
     whnf = new_cache ();
     eq_ok = Hashtbl.create 4096;
     eq_fail = Hashtbl.create 4096;
+    args_fail = Hashtbl.create 4096;
   }
 
 (* Caches hold results about terms of one environment; an environment only grows, so entries stay valid. An overlay
@@ -115,7 +142,9 @@ let env st = st.env
 (* Work budget: a file that makes the checker diverge is declined, never accepted. *)
 let fuel = ref 0
 let trace = Sys.getenv_opt "WARRANT_TRACE" <> None
-let default_fuel = 400_000_000
+
+(* The two limits below can be lowered from the environment, for the tests only (see Knobs). *)
+let default_fuel = Knobs.limit "WARRANT_FUEL" 400_000_000
 
 let tick () =
   decr fuel;
@@ -253,12 +282,15 @@ let string_lit_to_ctor st s =
 let nat_binops : (Name.t * (Z.t -> Z.t -> E.t)) list =
   let lit f a b = E.nat (f a b) in
   let bool b = mk_const (if b then n_bool_true else n_bool_false) in
-  let max_pow = 1 lsl 24 in
-  let max_bits = 1 lsl 28 in
+  let max_pow = Knobs.limit "WARRANT_MAX_POW" (1 lsl 24) in
+  let max_bits = Knobs.limit "WARRANT_MAX_BITS" (1 lsl 28) in
   [
     (nm "Nat.add", lit Z.add);
     (nm "Nat.sub", lit (fun a b -> if Z.lt a b then Z.zero else Z.sub a b));
-    (nm "Nat.mul", lit Z.mul);
+    ( nm "Nat.mul",
+      fun a b ->
+        if Z.numbits a + Z.numbits b > max_bits then decline "mul: result too large"
+        else E.nat (Z.mul a b) );
     (nm "Nat.div", lit (fun a b -> if Z.equal b Z.zero then Z.zero else Z.div a b));
     (nm "Nat.mod", lit (fun a b -> if Z.equal b Z.zero then a else Z.rem a b));
     (nm "Nat.gcd", lit Z.gcd);
@@ -451,33 +483,33 @@ and to_ctor_when_structure st ind_name e =
               | _ -> e)
         | _ -> e)
 
+(* No guard on free variables here: a let-bound variable stands for its (closed) value, and the arguments are reduced
+   with [whnf], which unfolds it. The kernel's [reduce_nat] has none either; its fvar test is in the lazy delta loop. *)
 and reduce_nat st e =
-  if e.has_fvar then None
-  else
-    match e.node with
-    | E.App (f, a) -> (
-        match f.node with
-        | E.Const (n, _) when n == n_nat_succ && nat_ok st -> (
-            match nat_lit_ext st (whnf st a) with Some z -> Some (E.nat (Z.succ z)) | None -> None)
-        | E.Const (n, _) when n == n_nat_log2 && Prim.genuine st.env "Nat.log2" -> (
-            match nat_lit_ext st (whnf st a) with Some z -> Some (E.nat (log2 z)) | None -> None)
-        | E.App (g, a1) -> (
-            match g.node with
-            | E.Const (n, _) -> (
-                match List.assq_opt n nat_binop_tbl with
-                | Some op
-                  when Prim.genuine st.env (Name.to_string n)
-                       &&
-                       match Name.to_string n with
-                       | "Nat.beq" | "Nat.ble" -> Prim.genuine st.env "Bool"
-                       | _ -> true -> (
-                    match (nat_lit_ext st (whnf st a1), nat_lit_ext st (whnf st a)) with
-                    | Some x, Some y -> Some (op x y)
-                    | _ -> None)
-                | _ -> None)
-            | _ -> None)
-        | _ -> None)
-    | _ -> None
+  match e.node with
+  | E.App (f, a) -> (
+      match f.node with
+      | E.Const (n, _) when n == n_nat_succ && nat_ok st -> (
+          match nat_lit_ext st (whnf st a) with Some z -> Some (E.nat (Z.succ z)) | None -> None)
+      | E.Const (n, _) when n == n_nat_log2 && Prim.genuine st.env "Nat.log2" -> (
+          match nat_lit_ext st (whnf st a) with Some z -> Some (E.nat (log2 z)) | None -> None)
+      | E.App (g, a1) -> (
+          match g.node with
+          | E.Const (n, _) -> (
+              match List.assq_opt n nat_binop_tbl with
+              | Some op
+                when Prim.genuine st.env (Name.to_string n)
+                     &&
+                     match Name.to_string n with
+                     | "Nat.beq" | "Nat.ble" -> Prim.genuine st.env "Bool"
+                     | _ -> true -> (
+                  match (nat_lit_ext st (whnf st a1), nat_lit_ext st (whnf st a)) with
+                  | Some x, Some y -> Some (op x y)
+                  | _ -> None)
+              | _ -> None)
+          | _ -> None)
+      | _ -> None)
+  | _ -> None
 
 and whnf st e =
   match e.node with
@@ -838,8 +870,12 @@ and lazy_delta_step st tn sn =
   | `True -> `Done true
   | `False -> `Done false
   | `Unknown -> (
+      (* The kernel tries this only when neither side has a free variable. Here a let-bound variable whose value is closed
+         counts as closed: [Nat.beq lit (e[x := let-bound])] would otherwise be compared by peeling the literal one
+         successor at a time. A term with any other free variable is left alone, as in the kernel: reducing its
+         arguments can force an arithmetic expression over a variable that will never become a literal. *)
       let nat_step =
-        if (not tn.has_fvar) && not sn.has_fvar then
+        if closed_modulo_lets tn && closed_modulo_lets sn then
           match reduce_nat st tn with
           | Some t' -> Some (`Done (is_def_eq_core st t' sn))
           | None -> (
@@ -858,10 +894,27 @@ and lazy_delta_step st tn sn =
             | None -> x
           in
           let step =
+            (* The kernel's rule (try_unfold_proj_app): when only one side can be unfolded and the other is a projection
+               application that whnf_core can reduce, reduce that one instead. Otherwise [expensive =?= inst.1 a] keeps
+               unfolding [expensive] (a function defined by well-founded or large structural recursion) when the
+               projection would have exposed a term to compare it with. *)
+            let proj_app_step e =
+              match (E.get_app_fn e).node with
+              | E.Proj _ ->
+                  let e' = whnf_core st e in
+                  if e' != e then Some e' else None
+              | _ -> None
+            in
             match (dt, ds) with
             | None, None -> `Stuck
-            | Some _, None -> `Next (unfold tn, sn)
-            | None, Some _ -> `Next (tn, unfold sn)
+            | Some _, None -> (
+                match proj_app_step sn with
+                | Some sn' -> `Next (tn, sn')
+                | None -> `Next (unfold tn, sn))
+            | None, Some _ -> (
+                match proj_app_step tn with
+                | Some tn' -> `Next (tn', sn)
+                | None -> `Next (tn, unfold sn))
             | Some d1, Some d2 ->
                 let c = compare_hints (hints_of d1) (hints_of d2) in
                 if c < 0 then `Next (unfold tn, sn)
@@ -873,7 +926,7 @@ and lazy_delta_step st tn sn =
                         match hints_of d1 with
                         | Decl.Regular _ ->
                             let key = if tn.id <= sn.id then (tn.id, sn.id) else (sn.id, tn.id) in
-                            if Hashtbl.mem st.c.eq_fail key then false
+                            if Hashtbl.mem st.c.args_fail key then false
                             else begin
                               let ls1 =
                                 match (E.get_app_fn tn).node with E.Const (_, l) -> l | _ -> []
@@ -884,7 +937,7 @@ and lazy_delta_step st tn sn =
                               if is_def_eq_levels ls1 ls2 && is_def_eq_args st tn sn then true
                               else begin
                                 if not (tn.has_fvar || sn.has_fvar) then
-                                  Hashtbl.replace st.c.eq_fail key ();
+                                  Hashtbl.replace st.c.args_fail key ();
                                 false
                               end
                             end
@@ -1023,7 +1076,7 @@ let check_prop st (t : Evidence.Is_type.t) =
   else None
 
 (* between declarations: no free variable survives, so neither does anything cached about one *)
-let cache_limit = 3_000_000
+let cache_limit = Knobs.limit "WARRANT_CACHE_LIMIT" 3_000_000
 
 let end_decl () =
   Hashtbl.reset lctx;
@@ -1036,18 +1089,15 @@ let end_decl () =
       let size =
         Hashtbl.length c.infer_only.global
         + Hashtbl.length c.whnf_core.global + Hashtbl.length c.whnf.global + Hashtbl.length c.eq_ok
-        + Hashtbl.length c.eq_fail
+        + Hashtbl.length c.eq_fail + Hashtbl.length c.args_fail
       in
       if size > cache_limit then begin
         Hashtbl.reset c.infer_only.global;
         Hashtbl.reset c.whnf_core.global;
         Hashtbl.reset c.whnf.global;
         Hashtbl.reset c.eq_ok;
-        Hashtbl.reset c.eq_fail
+        Hashtbl.reset c.eq_fail;
+        Hashtbl.reset c.args_fail
       end)
     cache_tbl;
   if Hashtbl.length Fingerprint.memo > 1_000_000 then Hashtbl.reset Fingerprint.memo
-
-let run_with_fuel f =
-  fuel := default_fuel;
-  f ()

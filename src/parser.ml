@@ -254,7 +254,7 @@ let check_meta o =
   | _ -> decline "export format version %s is not supported (3.1.x is)" v
 
 let line p (s : string) : item =
-  let j = try J.from_string s with Yojson.Json_error m -> malformed "%s" m in
+  let j = try J.from_string s with Yojson.Json_error m -> malformed "not valid JSON: %s" m in
   let o = to_obj j in
   match o with
   | [ ("meta", m) ] ->

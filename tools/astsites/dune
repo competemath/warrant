@@ -1,0 +1,3 @@
+(executable
+ (name astsites)
+ (libraries compiler-libs.common yojson))

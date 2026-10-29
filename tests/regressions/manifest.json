@@ -77,6 +77,1623 @@
    "expect": "reject",
    "why": "Nat.add is redefined as fun a b => a, and the file claims Nat.add 123456789 987654321 = 1111111110 by rfl. With the shortcut keyed on the name the kernel would take the sum from GMP and accept; the fingerprint of the redefined constant is not the genuine one, so literals are unfolded through the file's own definition and the claim fails.",
    "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "eta-struct-non-structure.ndjson",
+   "expect": "reject",
+   "why": "claims every n : Nat equals Nat.succ Nat.zero. Structure eta must apply only to structure-like types (one constructor, no indices, not recursive): a mutation that skipped that test accepted this.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-offset-succ-succ.ndjson",
+   "expect": "reject",
+   "why": "claims Nat.succ 1 = Nat.succ 2 by rfl. The successor/literal rule decides this one way or the other before anything is unfolded; its 'different' verdict must stay a refusal (a mutation turned it into 'equal' and nothing noticed).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-offset-succ-lit.ndjson",
+   "expect": "reject",
+   "why": "claims Nat.succ 1 = 5 by rfl. The successor/literal rule decides this one way or the other before anything is unfolded; its 'different' verdict must stay a refusal (a mutation turned it into 'equal' and nothing noticed).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "binder-domain-mismatch.ndjson",
+   "expect": "reject",
+   "why": "f : Sort 1 -> Sort 1 is declared to have type Sort 0 -> Sort 1. Comparing two binders compares their domains first; a mutation that treated different domains as equal accepted this.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "prod-rec-on-axiom-eta.ndjson",
+   "expect": "accept",
+   "why": "Prod.rec (fun a b => a) p0 = p0.1 for an axiom p0 : Nat x Nat holds by structure eta: the stuck major premise is replaced by Prod.mk p0.1 p0.2 before the rule fires. A mutation that skipped the expansion for every constant that is not a constructor refused it (completeness: nothing else noticed)."
+  },
+  {
+   "path": "ill-typed-lambda-domain.ndjson",
+   "expect": "reject",
+   "why": "fun (x : T Nat.zero) => x with T : Bool -> Type: the domain applies T to a Nat. Its type, inferred without looking inside the application, is a sort, and T Nat.zero unfolds to Nat so the lambda's type fits the declared Nat -> Nat. A binder domain must itself be checked; a mutation that only inferred its type accepted this.",
+   "msg": "application type mismatch"
+  },
+  {
+   "path": "ill-typed-application-argument.ndjson",
+   "expect": "reject",
+   "why": "Nat.succ (g Bool.true) with g : Nat -> Nat: the argument g Bool.true has type Nat when inferred without looking inside it, but applies g to a Bool. Arguments are checked, not just typed; a mutation that skipped that accepted this.",
+   "msg": "application type mismatch"
+  },
+  {
+   "path": "ill-typed-let-value.ndjson",
+   "expect": "reject",
+   "why": "let x : Nat := g Bool.true; x: the value is ill-typed (g applied to a Bool) though its type is Nat. A let value is checked; a mutation that only inferred its type accepted this.",
+   "msg": "application type mismatch"
+  },
+  {
+   "path": "ill-typed-let-type.ndjson",
+   "expect": "reject",
+   "why": "let x : T Nat.zero := Nat.zero; x: the let's type applies T : Bool -> Type to a Nat. A let type is checked; a mutation that only inferred its sort accepted this.",
+   "msg": "application type mismatch"
+  },
+  {
+   "path": "out-param-axiom-not-stripped.ndjson",
+   "expect": "reject",
+   "why": "outParam is an axiom here, so `outParam Nat` is an ordinary type and the recursor's minor premise must take `outParam Nat`, not `Nat`. The annotation is stripped only when the file's own definition is the identity-like one; a mutation that stripped it for any constant with another kind of declaration accepted the claimed recursor.",
+   "msg": "the type differs from the derivation"
+  },
+  {
+   "path": "out-param-not-identity.ndjson",
+   "expect": "reject",
+   "why": "outParam is defined as `fun a => Bool` here: `outParam Nat` is Bool, so the minor premise cannot be claimed to take Nat. Only a definition that returns its first argument makes outParam an annotation; a mutation that accepted any other shape stripped it.",
+   "msg": "the type differs from the derivation"
+  },
+  {
+   "path": "nested-parametric-tree.ndjson",
+   "expect": "accept",
+   "why": "T (a : Type) := mk (List (T a)): a nested inductive with a parameter, with its two recursors written by hand. The auxiliary type, its recursor and the rebuilding of the derived terms over the parameter are exercised only by a nested type that has one (Lean.Syntax has none): a mutation that rebuilt a lambda over the parameters as a Pi survived every other test."
+  },
+  {
+   "path": "mutual-prop-large-elimination.ndjson",
+   "expect": "reject",
+   "why": "A and B are two empty propositions declared together, with recursors claimed to eliminate into every Sort. A single empty proposition may (False does); a mutual block of propositions eliminates into Prop only. A mutation that allowed large elimination for mutual blocks accepted the claim.",
+   "msg": "universe parameters differ from the derivation"
+  },
+  {
+   "path": "string-of-list-wrong-type.ndjson.gz",
+   "expect": "reject",
+   "why": "String.ofList is an axiom Nat -> String here and the file compares the literal \"a\" with String.ofList 5. A literal expands through the file's own String.ofList only when it has type List Char -> String (there is no String.mk here either), so the comparison has no meaning and is refused for that reason; a mutation that accepted the constant when either its universe parameters or its type fit expanded the literal anyway and failed later, for another reason.",
+   "msg": "string literal: the environment has no String.ofList or String.mk of type List Char -> String"
+  },
+  {
+   "path": "claim-is-rec.ndjson",
+   "expect": "reject",
+   "why": "inductive T := mk (n : Nat) with one claim about the block changed: isRec true on a type that is not recursive. Every such claim is derived from the types and constructors and compared; none is trusted.",
+   "msg": "claimed isRec of T differs from the derivation"
+  },
+  {
+   "path": "claim-is-reflexive.ndjson",
+   "expect": "reject",
+   "why": "inductive T := mk (n : Nat) with one claim about the block changed: isReflexive true. Every such claim is derived from the types and constructors and compared; none is trusted.",
+   "msg": "claimed isReflexive of T differs from the derivation"
+  },
+  {
+   "path": "claim-num-nested.ndjson",
+   "expect": "reject",
+   "why": "inductive T := mk (n : Nat) with one claim about the block changed: numNested 1. Every such claim is derived from the types and constructors and compared; none is trusted.",
+   "msg": "claimed numNested of T differs from the derivation"
+  },
+  {
+   "path": "claim-num-indices.ndjson",
+   "expect": "reject",
+   "why": "inductive T := mk (n : Nat) with one claim about the block changed: numIndices 1. Every such claim is derived from the types and constructors and compared; none is trusted.",
+   "msg": "claimed numIndices of T differs from the derivation"
+  },
+  {
+   "path": "claim-rec-all.ndjson",
+   "expect": "reject",
+   "why": "inductive T := mk (n : Nat) with one claim about the block changed: the recursor's 'all' lists another type. Every such claim is derived from the types and constructors and compared; none is trusted.",
+   "msg": "T.rec: 'all' differs from the derivation"
+  },
+  {
+   "path": "claim-rec-minors.ndjson",
+   "expect": "reject",
+   "why": "inductive T := mk (n : Nat) with one claim about the block changed: two minor premises. Every such claim is derived from the types and constructors and compared; none is trusted.",
+   "msg": "T.rec: parameter, index, motive or minor counts differ from the derivation"
+  },
+  {
+   "path": "claim-rec-rules.ndjson",
+   "expect": "reject",
+   "why": "inductive T := mk (n : Nat) with one claim about the block changed: no computation rule. Every such claim is derived from the types and constructors and compared; none is trusted.",
+   "msg": "T.rec: number of rules differs from the derivation"
+  },
+  {
+   "path": "claim-rec-k.ndjson",
+   "expect": "reject",
+   "why": "inductive T := mk (n : Nat) with one claim about the block changed: the K flag. Every such claim is derived from the types and constructors and compared; none is trusted.",
+   "msg": "T.rec: the K flag differs from the derivation"
+  },
+  {
+   "path": "empty-inductive-block.ndjson",
+   "expect": "reject",
+   "why": "an inductive block with no types.",
+   "msg": "empty inductive block"
+  },
+  {
+   "path": "block-universe-parameters.ndjson",
+   "expect": "reject",
+   "why": "A takes a universe parameter and B none, in one block.",
+   "msg": "inductive block: universe parameters differ between types"
+  },
+  {
+   "path": "block-parameter-count.ndjson",
+   "expect": "reject",
+   "why": "A has one parameter and B none, in one block.",
+   "msg": "inductive block: number of parameters differs between types"
+  },
+  {
+   "path": "block-all-not-the-block.ndjson",
+   "expect": "reject",
+   "why": "A's 'all' lists only A although B is declared with it.",
+   "msg": "inductive block: 'all' is not the block"
+  },
+  {
+   "path": "block-universes-differ.ndjson",
+   "expect": "reject",
+   "why": "A : Type and B : Prop in one mutual block: the types must live in one universe.",
+   "msg": "mutually inductive types must live in the same universe"
+  },
+  {
+   "path": "dangling-reference.ndjson",
+   "expect": "reject",
+   "why": "an expression refers to level 5, which was never defined.",
+   "msg": "dangling"
+  },
+  {
+   "path": "index-defined-twice.ndjson",
+   "expect": "reject",
+   "why": "name 1 is defined twice.",
+   "msg": "defined twice"
+  },
+  {
+   "path": "quot-without-eq.ndjson",
+   "expect": "reject",
+   "why": "Quot declared in a file with no Eq: the quotient rules are stated through Eq.",
+   "msg": "quotient: Eq is not declared"
+  },
+  {
+   "path": "quot-unexpected-name.ndjson",
+   "expect": "reject",
+   "why": "a quotient declaration named Foo: only Quot, Quot.mk, Quot.lift and Quot.ind exist.",
+   "msg": "quotient: unexpected name"
+  },
+  {
+   "path": "quot-wrong-universes.ndjson",
+   "expect": "reject",
+   "why": "Quot declared with two universe parameters instead of one.",
+   "msg": "quotient: wrong universe parameters"
+  },
+  {
+   "path": "quot-wrong-type.ndjson",
+   "expect": "reject",
+   "why": "Quot declared with type Type instead of {a : Sort u} -> (a -> a -> Prop) -> Sort u.",
+   "msg": "quotient: the type of Quot is not the expected one"
+  },
+  {
+   "path": "quot-eq-wrong-shape.ndjson",
+   "expect": "reject",
+   "why": "Eq is an inductive family with one constructor, but a one-universe PUnit in disguise: no parameters, no index. The quotient rules need the real Eq.",
+   "msg": "quotient: Eq is not the expected inductive family"
+  },
+  {
+   "path": "literal-without-genuine-nat.ndjson",
+   "expect": "reject",
+   "why": "a natural number literal in a file whose Nat is an axiom, not the inductive type.",
+   "msg": "natural number literal: the environment's Nat is not the genuine one"
+  },
+  {
+   "path": "string-literal-without-string.ndjson",
+   "expect": "reject",
+   "why": "a string literal in a file with no String.",
+   "msg": "String literal without String"
+  },
+  {
+   "path": "wrong-number-of-levels.ndjson",
+   "expect": "reject",
+   "why": "a.{u} used with no universe level.",
+   "msg": "wrong number of universe levels for a"
+  },
+  {
+   "path": "function-expected.ndjson",
+   "expect": "reject",
+   "why": "Nat.zero applied to an argument: it is not a function.",
+   "msg": "function expected"
+  },
+  {
+   "path": "opaque-wrong-type.ndjson",
+   "expect": "reject",
+   "why": "an opaque constant of type Nat whose value is Bool.true.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nested-parameter-with-local.ndjson",
+   "expect": "reject",
+   "why": "T := mk (x : Nat) (PProd T (x = x)): T occurs inside PProd, whose other argument mentions the field x. A nested occurrence's parameters may not contain local variables.",
+   "msg": "invalid nested inductive datatype"
+  },
+  {
+   "path": "claim-ctor-index.ndjson",
+   "expect": "reject",
+   "why": "inductive T := mk (n : Nat) with one claim about the block changed: constructor mk has index 1 though it is the first. Every such claim is derived from the types and constructors and compared; none is trusted.",
+   "msg": "constructor T.mk has the wrong index"
+  },
+  {
+   "path": "claim-ctor-undeclared.ndjson",
+   "expect": "reject",
+   "why": "inductive T := mk (n : Nat) with one claim about the block changed: the type lists mk but no constructor declaration is given. Every such claim is derived from the types and constructors and compared; none is trusted.",
+   "msg": "constructor T.mk is listed but not declared"
+  },
+  {
+   "path": "claim-recursor-missing.ndjson",
+   "expect": "reject",
+   "why": "inductive T := mk (n : Nat) with one claim about the block changed: no recursor is given. Every such claim is derived from the types and constructors and compared; none is trusted.",
+   "msg": "recursor T.rec is derived but missing from the file"
+  },
+  {
+   "path": "claim-ctor-under-another-type.ndjson",
+   "expect": "reject",
+   "why": "the type A lists B.mk as its constructor but B.mk is declared as a constructor of B.",
+   "msg": "constructor B.mk is listed under another type"
+  },
+  {
+   "path": "constructor-too-few-parameters.ndjson",
+   "expect": "reject",
+   "why": "T takes one parameter but the type of T.mk has no binder for it.",
+   "msg": "constructor T.mk: too few parameters"
+  },
+  {
+   "path": "optparam-axiom-not-stripped.ndjson",
+   "expect": "reject",
+   "why": "optParam is an axiom here, so the field type `optParam Nat ..` is an ordinary type and the recursor's minor premise must take it, not Nat. The annotation is stripped only when the file's definition returns its first argument; a mutation that stripped it by name alone accepted the claimed recursor.",
+   "msg": "the type differs from the derivation"
+  },
+  {
+   "path": "autoparam-axiom-not-stripped.ndjson",
+   "expect": "reject",
+   "why": "autoParam is an axiom here, so the field type `autoParam Nat ..` is an ordinary type and the recursor's minor premise must take it, not Nat. The annotation is stripped only when the file's definition returns its first argument; a mutation that stripped it by name alone accepted the claimed recursor.",
+   "msg": "the type differs from the derivation"
+  },
+  {
+   "path": "semioutparam-axiom-not-stripped.ndjson",
+   "expect": "reject",
+   "why": "semiOutParam is an axiom here, so the field type `semiOutParam Nat ..` is an ordinary type and the recursor's minor premise must take it, not Nat. The annotation is stripped only when the file's definition returns its first argument; a mutation that stripped it by name alone accepted the claimed recursor.",
+   "msg": "the type differs from the derivation"
+  },
+  {
+   "path": "projection-index-boundary.ndjson",
+   "expect": "reject",
+   "why": "the third projection (index 2) of a pair.",
+   "msg": "projection index out of range"
+  },
+  {
+   "path": "nat-log2-literal.ndjson.gz",
+   "expect": "accept",
+   "why": "t : T 9 offered as a T (Nat.log2 1000); log2 1000 is 9. Nat.log2 is defined by well-founded recursion, so only the literal shortcut (gated, like the others, on the genuine definition) decides it; a mutation that turned the shortcut off left the true claim undecided."
+  },
+  {
+   "path": "nat-log2-literal-wrong.ndjson.gz",
+   "expect": "reject",
+   "why": "t : T 10 offered as a T (Nat.log2 1000); log2 1000 is 9. Nat.log2 is defined by well-founded recursion, so only the literal shortcut (gated, like the others, on the genuine definition) decides it; a mutation that turned the shortcut off left the true claim undecided.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "constant-levels-differ-in-last.ndjson",
+   "expect": "reject",
+   "why": "a.{0,2} and a.{0,1} agree in their first level and differ in the second; x : Sort 2 is given a.{0,1} : Sort 1. If terms were identified when only a prefix of the level lists agreed, the second would be read as the first (found by mutation testing).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "two-pairs-not-equal.ndjson",
+   "expect": "reject",
+   "why": "x y : Nat x Nat are two unknown pairs. Only a structure with no fields has all its elements equal; a mutation that applied that rule to every structure accepted x = y.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "two-units-equal.ndjson",
+   "expect": "accept",
+   "why": "x y : PUnit are equal: a structure with no fields has one element, whatever the terms look like."
+  },
+  {
+   "path": "quot-lift-on-non-mk.ndjson",
+   "expect": "reject",
+   "why": "Quot.lift id h (g 0 0 5) = 5 where g is an unknown function returning quotient elements. Quot.lift reduces only on a Quot.mk; a mutation that accepted any three-argument term as one computed f 5 and accepted the claim.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "same-definition-different-arguments.ndjson",
+   "expect": "reject",
+   "why": "f a = f b for f := fun x => Nat.succ x and two unknown naturals a b. The lazy comparison first tries the arguments, and when they differ it unfolds both sides; a mutation that made the failed argument comparison count as success accepted this.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "unsafe-definition-used-by-safe.ndjson",
+   "expect": "reject",
+   "why": "u is a definition with safety \"unsafe\" and a safe definition uses it. Only the exact word safe makes a definition safe; a mutation that read every other value as safe accepted this.",
+   "msg": "unsafe or partial"
+  },
+  {
+   "path": "partial-definition-used-by-safe.ndjson",
+   "expect": "reject",
+   "why": "u is a definition with safety \"partial\" and a safe definition uses it. Only the exact word safe makes a definition safe; a mutation that read every other value as safe accepted this.",
+   "msg": "unsafe or partial"
+  },
+  {
+   "path": "unsafe-axiom-mentions-unsafe.ndjson",
+   "expect": "accept",
+   "why": "unsafe axioms U1 : Type and U2 : U1. The type of an unsafe declaration is checked with unsafe constants allowed."
+  },
+  {
+   "path": "unsafe-definition-mentions-unsafe.ndjson",
+   "expect": "accept",
+   "why": "an unsafe definition whose type is an unsafe constant: its type is checked with unsafe constants allowed."
+  },
+  {
+   "path": "blank-lines.ndjson",
+   "expect": "accept",
+   "why": "an empty line between records is skipped."
+  },
+  {
+   "path": "eta-struct-first-field-differs.ndjson",
+   "expect": "reject",
+   "why": "p = (Nat.zero, p.2) or (p.1, Nat.zero) for an unknown pair p: the first field of the rebuilt pair is not the projection. Structure eta compares every field; a mutation that skipped the first one accepted the first form.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "eta-struct-second-field-differs.ndjson",
+   "expect": "reject",
+   "why": "p = (Nat.zero, p.2) or (p.1, Nat.zero) for an unknown pair p: the second field of the rebuilt pair is not the projection. Structure eta compares every field; a mutation that skipped the first one accepted the first form.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "mutual-different-parameters.ndjson",
+   "expect": "reject",
+   "why": "A and B are declared together but A takes a parameter of type Sort 1 and B one of type Sort 0. All types of a mutual block share their parameters; a mutation that inverted the comparison accepted exactly this.",
+   "msg": "parameters of all inductive types must match"
+  },
+  {
+   "path": "undeclared-universe-in-max.ndjson",
+   "expect": "reject",
+   "why": "a.{v} mentions the undeclared universe parameter u inside max. Every parameter must be declared: a mutation that accepted a max when only one side was in scope accepted this.",
+   "msg": "universe parameter out of scope"
+  },
+  {
+   "path": "undeclared-universe-in-imax.ndjson",
+   "expect": "reject",
+   "why": "a.{v} mentions the undeclared universe parameter u inside imax. Every parameter must be declared: a mutation that accepted a imax when only one side was in scope accepted this.",
+   "msg": "universe parameter out of scope"
+  },
+  {
+   "path": "init-int32-rxc-hassize.ndjson.gz",
+   "expect": "accept",
+   "why": "Init (toolchain 4.34.0-rc2) never finished this: comparing `Nat.sub A B` with `inst.1 a b` unfolded Nat.sub, which forces whnf of B = a bit-vector value mod 2^32 and peels 2^31 successors. The kernel reduces the projection application first (type_checker.cpp try_unfold_proj_app). Cut with: tools/slice.py init.ndjson out.ndjson _private.Init.Data.Range.Polymorphic.SInt.0.Int32.instRxcHasSize_eq"
+  },
+  {
+   "path": "init-char-ofordinal-proof3.ndjson.gz",
+   "expect": "accept",
+   "why": "Init (toolchain 4.34.0-rc2) never finished this: a `grind` certificate check compares `Bool.true` with `Nat.beq 4293853185 (natAbs (leadCoeff p) * 4294965248 - 1112063)` where p is a let-bound variable. The comparison peeled the literal one successor at a time because the term has a free variable; a variable whose value is closed now counts as closed for the arithmetic shortcut. Also: reduce_nat has no free-variable guard (the kernel has none). Cut with: tools/slice.py init.ndjson out.ndjson _private.Init.Data.Char.Ordinal.0.Char.ofOrdinal._proof_3"
+  },
+  {
+   "path": "init-lean-syntax-nested.ndjson.gz",
+   "expect": "accept",
+   "why": "Lean.Syntax is the one nested inductive in Init (it contains Array Syntax, which contains List Syntax): the auxiliary types, their recursors and the restoring of the derived terms are exercised by nothing else in the quick tests (found by mutation testing: swapping the restore of a lambda for a Pi survived). Cut with: tools/slice.py init.ndjson out.ndjson Lean.Syntax"
+  },
+  {
+   "path": "nat-div-7-0-0.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.div 7 0 is claimed to be 0 (dividing by zero gives zero). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict."
+  },
+  {
+   "path": "nat-div-7-0-7.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.div 7 0 is claimed to be 7 (dividing by zero does not give the dividend). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-mod-7-0-7.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.mod 7 0 is claimed to be 7 (the remainder modulo zero is the number itself). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict."
+  },
+  {
+   "path": "nat-mod-7-0-0.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.mod 7 0 is claimed to be 0 (the remainder modulo zero is not zero). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-div-7-2-3.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.div 7 2 is claimed to be 3 (division rounds down). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict."
+  },
+  {
+   "path": "nat-div-7-2-4.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.div 7 2 is claimed to be 4 (division does not round up). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-mod-7-2-1.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.mod 7 2 is claimed to be 1 (7 mod 2). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict."
+  },
+  {
+   "path": "nat-mod-7-2-0.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.mod 7 2 is claimed to be 0 (7 mod 2 is not 0). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-gcd-12-18-6.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.gcd 12 18 is claimed to be 6 (greatest common divisor). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict."
+  },
+  {
+   "path": "nat-gcd-12-18-12.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.gcd 12 18 is claimed to be 12 (gcd is not the first argument). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-land-12-10-8.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.land 12 10 is claimed to be 8 (bitwise and). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict."
+  },
+  {
+   "path": "nat-land-12-10-14.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.land 12 10 is claimed to be 14 (bitwise and is not or). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-lor-12-10-14.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.lor 12 10 is claimed to be 14 (bitwise or). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict."
+  },
+  {
+   "path": "nat-lor-12-10-8.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.lor 12 10 is claimed to be 8 (bitwise or is not and). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-xor-12-10-6.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.xor 12 10 is claimed to be 6 (bitwise exclusive or). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict."
+  },
+  {
+   "path": "nat-xor-12-10-14.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.xor 12 10 is claimed to be 14 (exclusive or is not or). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-shiftleft-3-4-48.ndjson",
+   "expect": "accept",
+   "why": "Nat.shiftLeft 3 4 is claimed to be 48 (3 shifted left by 4). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict."
+  },
+  {
+   "path": "nat-shiftleft-3-4-12.ndjson",
+   "expect": "reject",
+   "why": "Nat.shiftLeft 3 4 is claimed to be 12 (a shift left is not a shift by the other amount). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-shiftright-48-4-3.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.shiftRight 48 4 is claimed to be 3 (48 shifted right by 4). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict."
+  },
+  {
+   "path": "nat-shiftright-48-4-768.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.shiftRight 48 4 is claimed to be 768 (a shift right is not a shift left). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-shiftright-5-100000000000000000000-0.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.shiftRight 5 100000000000000000000 is claimed to be 0 (shifting right by more than the number has bits leaves nothing, whatever the amount). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict."
+  },
+  {
+   "path": "nat-shiftright-5-100000000000000000000-5.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.shiftRight 5 100000000000000000000 is claimed to be 5 (the amount is not ignored). The operation is decided by the literal shortcut, so a mutation of one of its cases (found by coverage: division by zero was never run) changes this verdict.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-pow-exponent-at-limit.ndjson",
+   "expect": "accept",
+   "why": "1 to the power 2^24, the largest exponent the shortcut takes. A decline is the checker saying it cannot decide, never a verdict."
+  },
+  {
+   "path": "nat-pow-exponent-over-limit.ndjson",
+   "expect": "decline",
+   "why": "1 to the power 2^24+1: one past the largest exponent, declined (the result would be 1, but the limit is on the exponent, not the result). A decline is the checker saying it cannot decide, never a verdict.",
+   "msg": "too large"
+  },
+  {
+   "path": "nat-pow-size-at-limit.ndjson.gz",
+   "expect": "accept",
+   "why": "32768^(2^24) has 15*2^24+1 bits: its size estimate, 16*2^24 = 2^28, is exactly the limit and is computed. A decline is the checker saying it cannot decide, never a verdict."
+  },
+  {
+   "path": "nat-pow-size-over-limit.ndjson.gz",
+   "expect": "decline",
+   "why": "65536^(2^24): the size estimate is 17*2^24, over the limit 2^28. A decline is the checker saying it cannot decide, never a verdict.",
+   "msg": "too large"
+  },
+  {
+   "path": "nat-shiftleft-amount-at-limit.ndjson.gz",
+   "expect": "accept",
+   "why": "1 shifted left by 2^24, the largest amount the shortcut takes. A decline is the checker saying it cannot decide, never a verdict."
+  },
+  {
+   "path": "nat-shiftleft-amount-over-limit.ndjson.gz",
+   "expect": "decline",
+   "why": "one past the largest shift. A decline is the checker saying it cannot decide, never a verdict.",
+   "msg": "too large"
+  },
+  {
+   "path": "nat-shiftleft-amount-huge.ndjson.gz",
+   "expect": "decline",
+   "why": "a shift by 10^30 does not fit a machine integer: it must be declined before the amount is converted. A decline is the checker saying it cannot decide, never a verdict.",
+   "msg": "too large"
+  },
+  {
+   "path": "nat-few-steps-land-5408.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.land on operands of about 113 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
+   "env": {
+    "WARRANT_FUEL": "5000"
+   }
+  },
+  {
+   "path": "nat-few-steps-land-5409.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.land on operands of about 113 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
+   "msg": "the value does not have the declared type",
+   "env": {
+    "WARRANT_FUEL": "5000"
+   }
+  },
+  {
+   "path": "nat-few-steps-lor-1037.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.lor on operands of about 113 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
+   "env": {
+    "WARRANT_FUEL": "5000"
+   }
+  },
+  {
+   "path": "nat-few-steps-lor-1038.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.lor on operands of about 113 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
+   "msg": "the value does not have the declared type",
+   "env": {
+    "WARRANT_FUEL": "5000"
+   }
+  },
+  {
+   "path": "nat-few-steps-xor-5629.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.xor on operands of about 113 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
+   "env": {
+    "WARRANT_FUEL": "5000"
+   }
+  },
+  {
+   "path": "nat-few-steps-xor-5630.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.xor on operands of about 113 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
+   "msg": "the value does not have the declared type",
+   "env": {
+    "WARRANT_FUEL": "5000"
+   }
+  },
+  {
+   "path": "nat-few-steps-gcd-1.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.gcd on operands of about 277 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
+   "env": {
+    "WARRANT_FUEL": "5000"
+   }
+  },
+  {
+   "path": "nat-few-steps-gcd-2.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.gcd on operands of about 277 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
+   "msg": "the value does not have the declared type",
+   "env": {
+    "WARRANT_FUEL": "5000"
+   }
+  },
+  {
+   "path": "nat-few-steps-div-7785.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.div on operands of about 212 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
+   "env": {
+    "WARRANT_FUEL": "5000"
+   }
+  },
+  {
+   "path": "nat-few-steps-div-7786.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.div on operands of about 212 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
+   "msg": "the value does not have the declared type",
+   "env": {
+    "WARRANT_FUEL": "5000"
+   }
+  },
+  {
+   "path": "nat-small-limits-pow-exponent-at-limit.ndjson",
+   "expect": "accept",
+   "why": "1^10 with the exponent limit 10. A result past a limit is declined (found by mutation testing: nothing tested the size clauses of shiftLeft, nor that Nat.mul has one).",
+   "env": {
+    "WARRANT_MAX_POW": "10",
+    "WARRANT_MAX_BITS": "100"
+   }
+  },
+  {
+   "path": "nat-small-limits-pow-exponent-past-limit.ndjson",
+   "expect": "decline",
+   "why": "1^11 with the exponent limit 10. A result past a limit is declined (found by mutation testing: nothing tested the size clauses of shiftLeft, nor that Nat.mul has one).",
+   "msg": "too large",
+   "env": {
+    "WARRANT_MAX_POW": "10",
+    "WARRANT_MAX_BITS": "100"
+   }
+  },
+  {
+   "path": "nat-small-limits-pow-size-at-limit.ndjson",
+   "expect": "accept",
+   "why": "512^10: 10 bits times 10 is exactly the limit 100. A result past a limit is declined (found by mutation testing: nothing tested the size clauses of shiftLeft, nor that Nat.mul has one).",
+   "env": {
+    "WARRANT_MAX_POW": "10",
+    "WARRANT_MAX_BITS": "100"
+   }
+  },
+  {
+   "path": "nat-small-limits-pow-size-past-limit.ndjson",
+   "expect": "decline",
+   "why": "1024^10: 11 bits times 10 is 110, past the limit 100. A result past a limit is declined (found by mutation testing: nothing tested the size clauses of shiftLeft, nor that Nat.mul has one).",
+   "msg": "too large",
+   "env": {
+    "WARRANT_MAX_POW": "10",
+    "WARRANT_MAX_BITS": "100"
+   }
+  },
+  {
+   "path": "nat-small-limits-shiftleft-amount-at-limit.ndjson",
+   "expect": "accept",
+   "why": "1 << 10 with the amount limit 10. A result past a limit is declined (found by mutation testing: nothing tested the size clauses of shiftLeft, nor that Nat.mul has one).",
+   "env": {
+    "WARRANT_MAX_POW": "10",
+    "WARRANT_MAX_BITS": "100"
+   }
+  },
+  {
+   "path": "nat-small-limits-shiftleft-amount-past-limit.ndjson",
+   "expect": "decline",
+   "why": "1 << 11 with the amount limit 10. A result past a limit is declined (found by mutation testing: nothing tested the size clauses of shiftLeft, nor that Nat.mul has one).",
+   "msg": "too large",
+   "env": {
+    "WARRANT_MAX_POW": "10",
+    "WARRANT_MAX_BITS": "100"
+   }
+  },
+  {
+   "path": "nat-small-limits-shiftleft-size-at-limit.ndjson",
+   "expect": "accept",
+   "why": "2^89 has 90 bits; shifted by 10 it has 100, exactly the limit. A result past a limit is declined (found by mutation testing: nothing tested the size clauses of shiftLeft, nor that Nat.mul has one).",
+   "env": {
+    "WARRANT_MAX_POW": "10",
+    "WARRANT_MAX_BITS": "100"
+   }
+  },
+  {
+   "path": "nat-small-limits-shiftleft-size-past-limit.ndjson",
+   "expect": "decline",
+   "why": "2^90 has 91 bits; shifted by 10 it would have 101, past the limit 100. A result past a limit is declined (found by mutation testing: nothing tested the size clauses of shiftLeft, nor that Nat.mul has one).",
+   "msg": "too large",
+   "env": {
+    "WARRANT_MAX_POW": "10",
+    "WARRANT_MAX_BITS": "100"
+   }
+  },
+  {
+   "path": "nat-small-limits-mul-size-at-limit.ndjson",
+   "expect": "accept",
+   "why": "two numbers of 50 bits: a product of at most 100 bits. A result past a limit is declined (found by mutation testing: nothing tested the size clauses of shiftLeft, nor that Nat.mul has one).",
+   "env": {
+    "WARRANT_MAX_POW": "10",
+    "WARRANT_MAX_BITS": "100"
+   }
+  },
+  {
+   "path": "nat-small-limits-mul-size-past-limit.ndjson",
+   "expect": "decline",
+   "why": "numbers of 51 and 50 bits: a product that may have 101 bits. A result past a limit is declined (found by mutation testing: nothing tested the size clauses of shiftLeft, nor that Nat.mul has one).",
+   "msg": "too large",
+   "env": {
+    "WARRANT_MAX_POW": "10",
+    "WARRANT_MAX_BITS": "100"
+   }
+  },
+  {
+   "path": "constructor-claims-other-parameter-count.ndjson",
+   "expect": "reject",
+   "why": "T has no parameter and T.mk claims one (found by mutation testing).",
+   "msg": "number of parameters differs"
+  },
+  {
+   "path": "nat-mul-chain-of-squarings-20.ndjson.gz",
+   "expect": "accept",
+   "why": "2^(2^20) has 2^20 + 1 bits; log2 of it is 2^20."
+  },
+  {
+   "path": "nat-mul-chain-of-squarings-29.ndjson.gz",
+   "expect": "decline",
+   "why": "the last square would have 2^29 + 1 bits, past the limit of 2^28: declined, never computed.",
+   "msg": "mul: result too large"
+  },
+  {
+   "path": "string-literal-expands.ndjson.gz",
+   "expect": "accept",
+   "why": "\"ab\" is String.ofList [97, 98]. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check)."
+  },
+  {
+   "path": "string-literal-empty.ndjson.gz",
+   "expect": "accept",
+   "why": "\"\" is String.ofList []. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check)."
+  },
+  {
+   "path": "string-literal-wrong-char.ndjson.gz",
+   "expect": "reject",
+   "why": "the second character differs. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "string-literal-too-short.ndjson.gz",
+   "expect": "reject",
+   "why": "the list is shorter than the string. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "string-literal-too-long.ndjson.gz",
+   "expect": "reject",
+   "why": "the list is longer than the string. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "string-literal-two-byte-char.ndjson.gz",
+   "expect": "accept",
+   "why": "a character of two UTF-8 bytes is one list element. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check)."
+  },
+  {
+   "path": "string-literal-bytes-not-chars.ndjson.gz",
+   "expect": "reject",
+   "why": "the elements are characters, not bytes. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "string-literal-three-byte-char.ndjson.gz",
+   "expect": "accept",
+   "why": "a character of three UTF-8 bytes. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check)."
+  },
+  {
+   "path": "string-literal-four-byte-char.ndjson.gz",
+   "expect": "accept",
+   "why": "a character of four UTF-8 bytes. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check)."
+  },
+  {
+   "path": "string-literal-mixed-widths.ndjson.gz",
+   "expect": "accept",
+   "why": "characters of different widths. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check)."
+  },
+  {
+   "path": "string-literal-mixed-widths-wrong.ndjson.gz",
+   "expect": "reject",
+   "why": "one character missing. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "string-literals-differ.ndjson.gz",
+   "expect": "reject",
+   "why": "\"a\" and \"b\" are different literals; a mutation that made two string literals equal whatever their text accepted.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "string-literal-whnf.ndjson.gz",
+   "expect": "accept",
+   "why": "String.toByteArray of the literal \"ab\" against String.toByteArray of the expansion: the literal must be expanded when it is the major premise of a recursor or the argument of a projection (found by coverage)."
+  },
+  {
+   "path": "string-literal-whnf-wrong.ndjson.gz",
+   "expect": "reject",
+   "why": "String.toByteArray of the literal \"ab\" against String.toByteArray of the expansion: the literal must be expanded when it is the major premise of a recursor or the argument of a projection (found by coverage).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "prim-dependency-genuine.ndjson",
+   "expect": "accept",
+   "why": "the control for the next two: Nat.add and what it is built from, as exported, and 10^8 + 10^8 = 2 * 10^8, which only the shortcut can decide (unfolding would take 10^8 steps)."
+  },
+  {
+   "path": "prim-dependency-opaque.ndjson",
+   "expect": "reject",
+   "why": "Nat.add._f, the helper Nat.add is built from, is an opaque constant with the genuine value. Nat.add no longer has the genuine fingerprint, so 10^8 + 10^8 is not computed, and unfolding stops at the helper: the claim T (10^8 + 10^8) from t : T (2 * 10^8) is refused. If the fingerprint did not hold the kind of a dependency (an opaque constant, an axiom), the shortcut would stay on and accept it (found by coverage: those branches of the fingerprint ran in no test).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "prim-dependency-axiom.ndjson",
+   "expect": "reject",
+   "why": "Nat.add._f, the helper Nat.add is built from, is an axiom of the genuine type. Nat.add no longer has the genuine fingerprint, so 10^8 + 10^8 is not computed, and unfolding stops at the helper: the claim T (10^8 + 10^8) from t : T (2 * 10^8) is refused. If the fingerprint did not hold the kind of a dependency (an opaque constant, an axiom), the shortcut would stay on and accept it (found by coverage: those branches of the fingerprint ran in no test).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "level-14-parameters-in-imax.ndjson",
+   "expect": "accept",
+   "why": "Sort (imax 1 (max u1 .. u14)) against the same with the parameters in the other order: equal levels that are not the same term, decided by splitting on each of the 14 parameters. The procedure splits on at most 14 and declines beyond (the work doubles with each); a mutation of the bound moved the line."
+  },
+  {
+   "path": "level-15-parameters-in-imax.ndjson",
+   "expect": "decline",
+   "why": "Sort (imax 1 (max u1 .. u15)) against the same with the parameters in the other order: equal levels that are not the same term, decided by splitting on each of the 15 parameters. The procedure splits on at most 14 and declines beyond (the work doubles with each); a mutation of the bound moved the line.",
+   "msg": "universe constraint"
+  },
+  {
+   "path": "let-body-universe-parameter.ndjson",
+   "expect": "accept",
+   "why": "c.{u} : let n : Nat := 0 in Sort u, and d : Prop := c.{0}: the type of c.{0} is the let with u replaced by 0, which reduces to Prop. A mutation of the cached 'mentions a universe parameter' flag of a let (ignoring the body) left u uninstantiated and the claim failed (found by mutation testing)."
+  },
+  {
+   "path": "let-type-and-value-universe-parameter.ndjson",
+   "expect": "accept",
+   "why": "e.{u} : let X : Sort (u+1) := Sort u in X, and d : Prop := e.{0}: same, with the parameter in the type and the value."
+  },
+  {
+   "path": "let-body-universe-parameter-wrong.ndjson",
+   "expect": "reject",
+   "why": "the same constant offered as a Type: c.{0} : Prop, not Type.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "positivity-domain.ndjson",
+   "expect": "reject",
+   "why": "mk : (T -> Nat) -> T: T occurs in the domain of the field's type.",
+   "msg": "non-positive occurrence"
+  },
+  {
+   "path": "positivity-domain-of-domain.ndjson",
+   "expect": "reject",
+   "why": "mk : ((T -> Nat) -> Nat) -> T: T occurs in the domain of a domain (strict positivity forbids it, as in Lean).",
+   "msg": "non-positive occurrence"
+  },
+  {
+   "path": "positivity-under-binder.ndjson",
+   "expect": "reject",
+   "why": "mk : (Nat -> T -> Nat) -> T: the occurrence is in the second binder, below an innocent one.",
+   "msg": "non-positive occurrence"
+  },
+  {
+   "path": "positivity-argument-of-other-constant.ndjson",
+   "expect": "reject",
+   "why": "mk : F T -> T for an axiom F : Type -> Type: T occurs as an argument of something that is not an inductive type of the block (nor a nested one: F is not an inductive type), so the occurrence is invalid.",
+   "msg": "invalid occurrence"
+  },
+  {
+   "path": "const-level-not-declared.ndjson",
+   "expect": "reject",
+   "why": "d : Type := A.{w}, where w is not a universe parameter of d (found by mutation testing: no test used a constant at an undeclared level; the Sort case had two).",
+   "msg": "universe parameter out of scope in A"
+  },
+  {
+   "path": "string-literal-reversed.ndjson.gz",
+   "expect": "accept",
+   "why": "String.ofList [..] against the literal \"ab\": the expansion also happens when the application is on the left."
+  },
+  {
+   "path": "string-literal-reversed-wrong.ndjson.gz",
+   "expect": "reject",
+   "why": "String.ofList [..] against the literal \"ab\": the expansion also happens when the application is on the left.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "string-mk-literal.ndjson.gz",
+   "expect": "accept",
+   "why": "A toolchain whose String has the constructor String.mk (and no String.ofList): the literal \"ab\" is String.mk [a, b]. Found by mutation testing: nothing used the older name."
+  },
+  {
+   "path": "string-mk-literal-wrong.ndjson.gz",
+   "expect": "reject",
+   "why": "A toolchain whose String has the constructor String.mk (and no String.ofList): the literal \"ab\" is String.mk [a, b]. Found by mutation testing: nothing used the older name.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nested-auxiliary-name-taken.ndjson",
+   "expect": "accept",
+   "why": "the nested tree of the previous file in an environment where `_nested.List_1`, the first name the checker would give the auxiliary type for List, already exists: it must take the next one. A mutation that skipped the check for an existing name collided with the declaration (found by mutation testing)."
+  },
+  {
+   "path": "recursor-partial-application-eta.ndjson",
+   "expect": "accept",
+   "why": "Nat.rec (fun _ => Nat) 0 (fun _ ih => ih) has its major premise missing: it is stuck, and equal to its eta-expansion. A mutation that read the major premise past the end of the arguments raised an internal error (a decline) here (found by mutation testing: nothing else compared a partly applied recursor)."
+  },
+  {
+   "path": "identity-function-not-an-annotation.ndjson",
+   "expect": "accept",
+   "why": "myIdentity.{u} (a : Sort u) : Sort u := a is a function that returns its first argument, like outParam, but it is not one of the four annotations the derivation strips (outParam, semiOutParam, optParam, autoParam): the field `myIdentity Nat` stays as it is, and the recursor's minor premise takes it. A mutation that stripped any such function refused the claimed recursor (found by mutation testing)."
+  },
+  {
+   "path": "rec-rule-names-the-wrong-constructor.ndjson",
+   "expect": "reject",
+   "why": "Bool.rec with the constructor names of its two computation rules exchanged and the right-hand sides left where they are: the rules differ from the derived ones in the constructor alone (found by mutation testing: every other test that changes a rule changes its right-hand side or the number of fields too).",
+   "msg": "a computation rule differs from the derivation"
+  },
+  {
+   "path": "nat-log2-0-0.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.log2 0 is claimed to be 0. The machine logarithm is undefined at 0; the shortcut must answer 0 there, as the definition does (a mutation that did not special-case it raised an internal error: found by mutation testing)."
+  },
+  {
+   "path": "nat-log2-0-1.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.log2 0 is claimed to be 1. The machine logarithm is undefined at 0; the shortcut must answer 0 there, as the definition does (a mutation that did not special-case it raised an internal error: found by mutation testing).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-log2-1-0.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.log2 1 is claimed to be 0. The machine logarithm is undefined at 0; the shortcut must answer 0 there, as the definition does (a mutation that did not special-case it raised an internal error: found by mutation testing)."
+  },
+  {
+   "path": "nat-log2-2-1.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.log2 2 is claimed to be 1. The machine logarithm is undefined at 0; the shortcut must answer 0 there, as the definition does (a mutation that did not special-case it raised an internal error: found by mutation testing)."
+  },
+  {
+   "path": "nat-log2-3-1.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.log2 3 is claimed to be 1. The machine logarithm is undefined at 0; the shortcut must answer 0 there, as the definition does (a mutation that did not special-case it raised an internal error: found by mutation testing)."
+  },
+  {
+   "path": "nat-log2-4-2.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.log2 4 is claimed to be 2. The machine logarithm is undefined at 0; the shortcut must answer 0 there, as the definition does (a mutation that did not special-case it raised an internal error: found by mutation testing)."
+  },
+  {
+   "path": "nat-log2-4-1.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.log2 4 is claimed to be 1. The machine logarithm is undefined at 0; the shortcut must answer 0 there, as the definition does (a mutation that did not special-case it raised an internal error: found by mutation testing).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "inductive-fewer-binders-than-parameters.ndjson",
+   "expect": "reject",
+   "why": "T : Type is claimed to have one parameter. A mutation that dropped the check read the missing parameter later and raised an internal error (a decline) instead of refusing the claim (found by mutation testing).",
+   "msg": "number of parameters mismatch"
+  },
+  {
+   "path": "quot-mk-without-type.ndjson",
+   "expect": "reject",
+   "why": "Quot.mk declared without Quot: each quotient declaration needs the ones its type mentions (found by mutation testing: the checks of the order were never reached).",
+   "msg": "Quot.mk needs Quot"
+  },
+  {
+   "path": "quot-ind-without-ctor.ndjson",
+   "expect": "reject",
+   "why": "Quot.ind declared without Quot.mk: each quotient declaration needs the ones its type mentions (found by mutation testing: the checks of the order were never reached).",
+   "msg": "Quot.ind needs Quot.mk"
+  },
+  {
+   "path": "quot-lift-without-ctor.ndjson",
+   "expect": "reject",
+   "why": "Quot.lift declared with Quot but without Quot.mk (the cut of Quot.lift from a real export has no Quot.mk): the lift rule computes on Quot.mk, so it is needed first.",
+   "msg": "Quot.lift needs Quot.mk"
+  },
+  {
+   "path": "rec-claims-wrong-num-params.ndjson",
+   "expect": "reject",
+   "why": "T.rec claimed with one parameter more than the type has: the counts are claims, compared with the derived ones one by one (found by mutation testing: a comparison of the motive count alone could be dropped unnoticed).",
+   "msg": "counts differ"
+  },
+  {
+   "path": "rec-claims-wrong-num-indices.ndjson",
+   "expect": "reject",
+   "why": "T.rec claimed with one index more than the type has: the counts are claims, compared with the derived ones one by one (found by mutation testing: a comparison of the motive count alone could be dropped unnoticed).",
+   "msg": "counts differ"
+  },
+  {
+   "path": "rec-claims-wrong-num-motives.ndjson",
+   "expect": "reject",
+   "why": "T.rec claimed with two motives for a single type: the counts are claims, compared with the derived ones one by one (found by mutation testing: a comparison of the motive count alone could be dropped unnoticed).",
+   "msg": "counts differ"
+  },
+  {
+   "path": "rec-claims-wrong-num-minors.ndjson",
+   "expect": "reject",
+   "why": "T.rec claimed with two minor premises for a single constructor: the counts are claims, compared with the derived ones one by one (found by mutation testing: a comparison of the motive count alone could be dropped unnoticed).",
+   "msg": "counts differ"
+  },
+  {
+   "path": "constructor-wrong-return-type.ndjson",
+   "expect": "reject",
+   "why": "T.mk : Nat -> Nat, a constructor of T whose result is Nat. Found by mutation testing: nothing else reached the check.",
+   "msg": "invalid return type"
+  },
+  {
+   "path": "quot-eq-other-split-of-arguments.ndjson",
+   "expect": "reject",
+   "why": "Eq with one parameter and two indices (Eq.refl has the field `a`): the same type and the same constructor type as the real Eq, another recursor. The quotient rules need the real Eq; the official kernel does not look at the split, WARRANT does (found by mutation testing: the two counts could be dropped unnoticed).",
+   "msg": "quotient: Eq is not the expected inductive family"
+  },
+  {
+   "path": "eq-other-split-of-arguments-alone.ndjson",
+   "expect": "accept",
+   "why": "the control for the previous file: that Eq on its own is a valid inductive family (its recursor is the derived one)."
+  },
+  {
+   "path": "quot-eq-refl-type-not-the-expected-one.ndjson",
+   "expect": "reject",
+   "why": "Eq with the real split whose constructor has the type (A) (a : A) -> Eq A a ((fun x => x) a): the same up to reduction, not the type the quotient rules are stated for. A mutation that dropped the comparison of the constructor's type accepted it.",
+   "msg": "quotient: Eq is not the expected inductive family"
+  },
+  {
+   "path": "eq-refl-with-redex-alone.ndjson",
+   "expect": "accept",
+   "why": "the control for the previous file: that Eq on its own is a valid inductive family."
+  },
+  {
+   "path": "nested-in-indexed-container.ndjson",
+   "expect": "accept",
+   "why": "Vec (A : Type w) : Nat -> Type w with its recursor, and T := mk (Vec T 0): a nested occurrence in a container that has an index. The auxiliary type has the index, the nested recursor takes it, and the rules rebuild the container's constructors over T. Found by mutation testing: nothing else nested through a container with indices, so the split of the container's arguments into parameters and indices could be changed unnoticed."
+  },
+  {
+   "path": "mutual-props-no-k.ndjson",
+   "expect": "accept",
+   "why": "A : Prop with a constructor without fields and B : Prop without constructors, declared together. K-like reduction (the recursor treats any proof as the constructor) is for a single proposition with a single constructor without fields; this block has one constructor without fields in all and two types. A mutation that dropped the test for a single type gave both recursors the K flag and the claim (no K) was refused (found by mutation testing)."
+  },
+  {
+   "path": "duplicate-key-not-first.ndjson",
+   "expect": "decline",
+   "why": "the repeated key is the second and third of the object: the check looked for repeats of the first key only (found by mutation testing).",
+   "msg": "duplicate key"
+  },
+  {
+   "path": "duplicate-key-nested.ndjson",
+   "expect": "decline",
+   "why": "a repeated key inside a nested object.",
+   "msg": "duplicate key"
+  },
+  {
+   "path": "failure-cache-is-not-a-verdict.ndjson",
+   "expect": "accept",
+   "why": "f := fun _ => 0: f 1 = f 2 holds. t1 asks it under a beta redex (the arguments differ, then the unfoldings agree), t2 asks it directly afterwards. The checker once refused t2."
+  },
+  {
+   "path": "nat-big-add-2345-6445.ndjson",
+   "expect": "accept",
+   "why": "Nat.add on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-add-2345-6446.ndjson",
+   "expect": "reject",
+   "why": "Nat.add on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-sub-4100-1755.ndjson",
+   "expect": "accept",
+   "why": "Nat.sub on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-sub-4100-1756.ndjson",
+   "expect": "reject",
+   "why": "Nat.sub on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-sub-2345-0.ndjson",
+   "expect": "accept",
+   "why": "Nat.sub on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-sub-2345-1.ndjson",
+   "expect": "reject",
+   "why": "Nat.sub on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-mul-2345-4500.ndjson",
+   "expect": "accept",
+   "why": "Nat.mul on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-mul-2345-4501.ndjson",
+   "expect": "reject",
+   "why": "Nat.mul on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-div-2345-0.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.div on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-div-2345-1.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.div on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-mod-2345-2345.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.mod on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-mod-2345-2346.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.mod on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-mod-2345-5.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.mod on operands of about 100 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-mod-2345-6.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.mod on operands of about 100 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-gcd-9824-576.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.gcd on operands of about 122 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-gcd-9824-577.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.gcd on operands of about 122 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-land-2345-5408.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.land on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-land-2345-5409.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.land on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-lor-2345-1037.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.lor on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-lor-2345-1038.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.lor on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-xor-2345-5629.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.xor on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-xor-2345-5630.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.xor on operands of about 113 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-shiftleft-2345-9280.ndjson",
+   "expect": "accept",
+   "why": "Nat.shiftLeft on operands of about 100 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-shiftleft-2345-9281.ndjson",
+   "expect": "reject",
+   "why": "Nat.shiftLeft on operands of about 100 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-shiftright-2345-2947.ndjson.gz",
+   "expect": "accept",
+   "why": "Nat.shiftRight on operands of about 100 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-shiftright-2345-2948.ndjson.gz",
+   "expect": "reject",
+   "why": "Nat.shiftRight on operands of about 100 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nat-big-pow-3-8001.ndjson",
+   "expect": "accept",
+   "why": "Nat.pow on operands of about 9 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it."
+  },
+  {
+   "path": "nat-big-pow-3-8002.ndjson",
+   "expect": "reject",
+   "why": "Nat.pow on operands of about 9 bits: unfolding the definition would take more steps than the checker's budget, so the shortcut for the operation must decide it, and the claim is one more than the result.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "quot-lift-same-universe-twice.ndjson",
+   "expect": "reject",
+   "why": "Quot.lift.{u, u}: the two universe parameters must be different names (the quotient's and the target's).",
+   "msg": "quotient: wrong universe parameters"
+  },
+  {
+   "path": "constructor-other-universe-parameters.ndjson",
+   "expect": "reject",
+   "why": "T : Type has no universe parameters and T.mk is declared with one (w). The constructor and its type share their parameters.",
+   "msg": "universe parameters differ"
+  },
+  {
+   "path": "two-argument-identity-not-an-annotation.ndjson",
+   "expect": "accept",
+   "why": "myConst2.{u} (a : Sort u) (x : a) : Sort u := a returns its first argument like optParam and autoParam, but it is neither: the field `myConst2 Nat 0` is kept as it is (found by mutation testing, as for the one-argument case)."
+  },
+  {
+   "path": "recursive-structure-no-eta.ndjson",
+   "expect": "reject",
+   "why": "T := mk (T) is a type with one constructor and no index but it is recursive; x = T.mk x.1 does not hold for an axiom x : T. Structure eta is for structures that are not recursive (found by mutation testing: nothing checked the condition).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "mdata-is-transparent.ndjson",
+   "expect": "accept",
+   "why": "an axiom d whose type is a metadata node around Prop (Sort 0): the node is read through. A mutation that read another key declined every file with metadata (found by mutation testing: no test file had a metadata node)."
+  },
+  {
+   "path": "prop-structure-no-eta.ndjson",
+   "expect": "reject",
+   "why": "And.rec (fun _ _ => 5) x for an axiom x : P /\\ Q is stuck: the stuck major premise of a recursor is replaced by the constructor applied to its projections only for structures that are not propositions (the official kernel's rule). A mutation that did it for propositions too accepted the claim that this is 5 (found by mutation testing).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "mutual-constructor-returns-the-other-type.ndjson",
+   "expect": "reject",
+   "why": "A.mk : B, a constructor of A that returns the other type of the block (found by mutation testing: the result must be the constructor's own type, not just a type of the block).",
+   "msg": "invalid return type"
+  },
+  {
+   "path": "string-mk-with-universe-parameter.ndjson.gz",
+   "expect": "reject",
+   "why": "String.mk.{u} : List Char -> String, with a universe parameter it does not use: a literal would expand to String.mk without levels, which is not that constant, so the environment has no usable constructor for string literals (found by mutation testing).",
+   "msg": "string literal: the environment has no String.ofList or String.mk"
+  },
+  {
+   "path": "constructor-field-universe-too-large.ndjson",
+   "expect": "reject",
+   "why": "T : Type with T.mk : Type -> T: the field has type Type : Type 1, larger than T's universe. The recursor is claimed as the checker would derive it, so only the universe check can refuse the file (found by mutation testing: the old tests refused such files for the wrong reason).",
+   "msg": "a field lives in a universe larger"
+  },
+  {
+   "path": "inductive-type-ill-typed.ndjson",
+   "expect": "reject",
+   "why": "T : List.{0} (Sort 3) -> Type: List takes a Type 0, and Sort 3 is not one. Only checking the type of T as a type notices; peeling its binders does not (found by mutation testing).",
+   "msg": "application type mismatch"
+  },
+  {
+   "path": "unsafe-opaque-value-not-checked.ndjson",
+   "expect": "accept",
+   "why": "unsafe opaque o : Bool := Nat.zero: the value has the wrong type, and it does not matter, because no safe declaration can use an unsafe constant and the kernel does not run unsafe code. A mutation that took an unsafe opaque for a safe one refused the file (found by mutation testing)."
+  },
+  {
+   "path": "quot-lift-partial-application-eta.ndjson",
+   "expect": "accept",
+   "why": "Quot.lift with five of its six arguments is stuck and equal to its eta-expansion. A mutation that read the sixth argument past the end raised an internal error (a decline) here (found by mutation testing)."
+  },
+  {
+   "path": "quot-eq-two-constructors.ndjson",
+   "expect": "reject",
+   "why": "Eq with the real type and split and a second constructor with the type of Eq.refl: the quotient rules need the real Eq, which has one constructor (found by mutation testing).",
+   "msg": "quotient: Eq is not the expected inductive family"
+  },
+  {
+   "path": "eq-two-constructors-alone.ndjson",
+   "expect": "accept",
+   "why": "the control for the previous file: that Eq on its own is a valid inductive family."
+  },
+  {
+   "path": "quot-eq-in-type.ndjson",
+   "expect": "reject",
+   "why": "Eq : (A : Sort v) -> A -> A -> Type, with the real constructor and split: a family of types, not of propositions. The quotient rules need the type of the real Eq (found by mutation testing: nothing compared it).",
+   "msg": "quotient: Eq is not the expected inductive family"
+  },
+  {
+   "path": "eq-in-type-alone.ndjson",
+   "expect": "accept",
+   "why": "the control for the previous file: that Eq on its own is a valid inductive family."
+  },
+  {
+   "path": "parse-negative-hints.ndjson",
+   "expect": "decline",
+   "why": "hints of regular height -1: declined with the reason (found by mutation testing: a line of one character, which can never be an object, was skipped silently; and a negative height was read).",
+   "msg": "unknown reducibility hints"
+  },
+  {
+   "path": "parse-one-character-line.ndjson",
+   "expect": "decline",
+   "why": "a line that is the number 5: declined with the reason (found by mutation testing: a line of one character, which can never be an object, was skipped silently; and a negative height was read).",
+   "msg": "expected an object"
+  },
+  {
+   "path": "parse-one-letter-line.ndjson",
+   "expect": "decline",
+   "why": "a line that is the letter x: declined with the reason (found by mutation testing: a line of one character, which can never be an object, was skipped silently; and a negative height was read).",
+   "msg": "not valid JSON"
+  },
+  {
+   "path": "extra-recursor-in-block.ndjson",
+   "expect": "reject",
+   "why": "T with its recursor and a second recursor named T.extra that no type of the block has (found by mutation testing: the comparison went the other way only, every derived recursor must be in the file, but not every recursor of the file derived).",
+   "msg": "is not the recursor of any type of its block"
+  },
+  {
+   "path": "occurrence-with-other-parameters.ndjson",
+   "expect": "reject",
+   "why": "P (A : Type) : Type with P.mk : P Nat -> P A: the recursive occurrence has the parameter Nat, not the parameter A. Only the same parameters are allowed (found by mutation testing: a check that every parameter of an occurrence is the type's own could be dropped unnoticed).",
+   "msg": "invalid occurrence"
+  },
+  {
+   "path": "two-constructors-no-eta-in-recursor.ndjson",
+   "expect": "reject",
+   "why": "Bool.rec 5 6 b for an axiom b : Bool is stuck: Bool has two constructors, so b is not replaced by one of them (the official kernel's behaviour; a second check inside the expansion also refuses it, so this pins the behaviour, not one line).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "constructor-listed-by-no-type.ndjson",
+   "expect": "reject",
+   "why": "T lists the constructor T.mk, and the block declares a second constructor T.other that no type lists (found by mutation testing: every constructor the types list was checked, not the other way round).",
+   "msg": "belongs to no type of its block"
+  },
+  {
+   "path": "projection-of-a-proof-into-a-proof.ndjson",
+   "expect": "accept",
+   "why": "h : P /\\ Q; (h.1 : P) is a proof taken from a proof. A mutation that refused every projection from a proposition refused it (found by mutation testing)."
+  },
+  {
+   "path": "projection-of-a-proof-into-data.ndjson",
+   "expect": "reject",
+   "why": "hn : Nonempty Nat; (hn.1 : Nat) would take an element, which is data, out of a proof: the structure is a proposition, the field is not.",
+   "msg": "projection of a proof into a non-proposition"
+  },
+  {
+   "path": "parse-empty-natural-literal.ndjson",
+   "expect": "decline",
+   "why": "natVal \"\" has no digits.",
+   "msg": "bad natural literal"
+  },
+  {
+   "path": "quot-lift-without-quot-type.ndjson",
+   "expect": "reject",
+   "why": "Quot.lift declared without Quot (found by mutation testing: the check was only ever run for Quot.mk).",
+   "msg": "Quot.lift needs Quot\n"
+  },
+  {
+   "path": "quot-ind-without-quot-type.ndjson",
+   "expect": "reject",
+   "why": "Quot.ind declared without Quot (found by mutation testing: the check was only ever run for Quot.mk).",
+   "msg": "Quot.ind needs Quot\n"
+  },
+  {
+   "path": "projection-of-a-later-field-through-data.ndjson",
+   "expect": "reject",
+   "why": "he : MyEx p0 where MyEx p := intro (w : Nat) (h : p w) is a proposition; he.2 : p0 he.1 would use he.1, a natural number taken out of a proof, in its type (found by mutation testing: only the last field was ever projected from a proposition).",
+   "msg": "projection of a proof into a non-proposition"
+  },
+  {
+   "path": "fake-nat-log2-definition-decides.ndjson",
+   "expect": "accept",
+   "why": "Nat.log2 := fun _ => 5 is the file's own definition, so log2 1000 = 5 holds in this file."
+  },
+  {
+   "path": "fake-nat-log2-shortcut-off.ndjson",
+   "expect": "reject",
+   "why": "Nat.log2 := fun _ => 5 is the file's own definition: log2 1000 = 9 does not hold in this file, and it is the genuine Nat.log2's value. A mutation that used the shortcut for any constant of that name accepted it (found by mutation testing: only Nat.add had a negative control).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "let-value-of-the-wrong-type-unused.ndjson",
+   "expect": "reject",
+   "why": "d : Nat := let x : Nat := true in 5: the value is a Bool, the body never uses x, so no other check sees it (found by mutation testing: the check could be dropped unnoticed).",
+   "msg": "let value has the wrong type"
+  },
+  {
+   "path": "same-arguments-different-levels.ndjson",
+   "expect": "reject",
+   "why": "f.{u} (a : Nat) : Sort 3 := A.{u}, and the claim f.{0} 5 = f.{1} 5: the arguments agree, the levels do not, and the unfoldings A.{0} and A.{1} are different constants. A mutation of the same-arguments shortcut that left the levels out accepted it (found by mutation testing).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "constant-at-two-levels.ndjson",
+   "expect": "reject",
+   "why": "A.{0} = A.{1} for an axiom A.{u} : Sort 3: the same constant at different levels is not one term. A mutation of the comparison of two constants that left the levels out accepted it (found by mutation testing).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "unsafe-opaque-type-mentions-unsafe.ndjson",
+   "expect": "accept",
+   "why": "unsafe axiom U1 : Type and unsafe opaque o : U1: the type of an unsafe opaque constant is checked with unsafe constants allowed (found by mutation testing, as for unsafe axioms and definitions)."
+  },
+  {
+   "path": "constructor-field-ill-typed.ndjson",
+   "expect": "reject",
+   "why": "T.mk : List.{0} (Sort 3) -> T: the field's type applies List to something that is not a Type 0. Two checks look at it (the whole constructor type, and the sort of the field); the file must be refused if either one is there.",
+   "msg": "application type mismatch"
+  },
+  {
+   "path": "work-budget-exhausted.ndjson.gz",
+   "expect": "decline",
+   "why": "the same file as nat-log2-literal, run with a work budget of 10 steps (WARRANT_FUEL): the checker declines and says why. With its normal budget (400 million steps) the file is accepted. A budget can turn an accept into a decline, never a decline into an accept.",
+   "msg": "work budget exhausted",
+   "env": {
+    "WARRANT_FUEL": "10"
+   }
+  },
+  {
+   "path": "deep-term-accepted.ndjson",
+   "expect": "accept",
+   "why": "s (s (... z)) nested 3000 deep, with the stack the checker normally has: accepted. The control for the next file."
+  },
+  {
+   "path": "deep-term-stack-overflow.ndjson",
+   "expect": "decline",
+   "why": "the same file with a stack of 1000 words (OCAMLRUNPARAM=l=1000): the checker declines with the reason instead of crashing or guessing (found by coverage: the handler had never run).",
+   "msg": "stack overflow",
+   "env": {
+    "OCAMLRUNPARAM": "l=1000"
+   }
+  },
+  {
+   "path": "parse-missing-field.ndjson",
+   "expect": "decline",
+   "why": "an application without its argument: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+   "msg": "missing field arg"
+  },
+  {
+   "path": "parse-not-an-integer.ndjson",
+   "expect": "decline",
+   "why": "a name index that is a string: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+   "msg": "expected an integer"
+  },
+  {
+   "path": "parse-not-a-boolean.ndjson",
+   "expect": "decline",
+   "why": "isUnsafe as a string: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+   "msg": "expected a boolean"
+  },
+  {
+   "path": "parse-not-a-string.ndjson",
+   "expect": "decline",
+   "why": "a name component that is a number: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+   "msg": "expected a string"
+  },
+  {
+   "path": "parse-not-a-list.ndjson",
+   "expect": "decline",
+   "why": "universe arguments that are a number: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+   "msg": "expected a list"
+  },
+  {
+   "path": "parse-not-an-object.ndjson",
+   "expect": "decline",
+   "why": "a declaration that is a number: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+   "msg": "expected an object"
+  },
+  {
+   "path": "parse-unknown-hints.ndjson",
+   "expect": "decline",
+   "why": "hints that are not opaque, abbrev or regular: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+   "msg": "unknown reducibility hints"
+  },
+  {
+   "path": "parse-unknown-quotient-kind.ndjson",
+   "expect": "decline",
+   "why": "a quotient declaration of no known kind: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+   "msg": "unknown quotient kind"
+  },
+  {
+   "path": "parse-unknown-expression-kind.ndjson",
+   "expect": "decline",
+   "why": "an expression node of no known kind: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+   "msg": "unknown expression kind"
+  },
+  {
+   "path": "parse-level-operands.ndjson",
+   "expect": "decline",
+   "why": "a max with one operand: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+   "msg": "needs two operands"
+  },
+  {
+   "path": "parse-unknown-level-kind.ndjson",
+   "expect": "decline",
+   "why": "a level node of no known kind: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+   "msg": "unknown level kind"
+  },
+  {
+   "path": "parse-unknown-declaration-kind.ndjson",
+   "expect": "decline",
+   "why": "a declaration of no known kind: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+   "msg": "unknown declaration kind"
+  },
+  {
+   "path": "parse-not-json.ndjson",
+   "expect": "decline",
+   "why": "a line that is not JSON: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+   "msg": "not valid JSON"
+  },
+  {
+   "path": "parse-bad-name-entry.ndjson",
+   "expect": "decline",
+   "why": "a name entry of neither shape: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+   "msg": "bad name entry"
+  },
+  {
+   "path": "parse-bad-level-entry.ndjson",
+   "expect": "decline",
+   "why": "a level entry with no node: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+   "msg": "bad level entry"
+  },
+  {
+   "path": "parse-bad-expression-entry.ndjson",
+   "expect": "decline",
+   "why": "an expression entry with no node: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+   "msg": "bad expression entry"
+  },
+  {
+   "path": "parse-bad-line.ndjson",
+   "expect": "decline",
+   "why": "a line that is not a table entry or one declaration: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+   "msg": "bad line"
+  },
+  {
+   "path": "parse-second-meta-line.ndjson",
+   "expect": "decline",
+   "why": "two meta lines: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+   "msg": "second meta line"
+  },
+  {
+   "path": "parse-version-3-2.ndjson",
+   "expect": "decline",
+   "why": "format version 3.2.0: only 3.1.x is read.",
+   "msg": "is not supported"
+  },
+  {
+   "path": "parse-version-4.ndjson",
+   "expect": "decline",
+   "why": "format version 4: only 3.1.x is read.",
+   "msg": "is not supported"
+  },
+  {
+   "path": "unsafe-inductive-types.ndjson",
+   "expect": "decline",
+   "why": "PUnit with its type marked unsafe: the checker does not check unsafe inductive declarations and says so, rather than accepting them unchecked (found by coverage).",
+   "msg": "unsafe inductive types"
+  },
+  {
+   "path": "unsafe-inductive-ctors.ndjson",
+   "expect": "decline",
+   "why": "PUnit with its constructor marked unsafe: the checker does not check unsafe inductive declarations and says so, rather than accepting them unchecked (found by coverage).",
+   "msg": "unsafe constructors"
+  },
+  {
+   "path": "unsafe-inductive-recs.ndjson",
+   "expect": "decline",
+   "why": "PUnit with its rec marked unsafe: the checker does not check unsafe inductive declarations and says so, rather than accepting them unchecked (found by coverage).",
+   "msg": "unsafe recursors"
   }
  ]
 }

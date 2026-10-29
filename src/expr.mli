@@ -41,11 +41,13 @@ val let_ : t -> t -> t -> t
 val nat : Z.t -> t
 val str : string -> t
 val proj : Name.t -> int -> t -> t
-val equal : t -> t -> bool
 val mk_app : t -> t list -> t
 val get_app_fn : t -> t
 val get_app_args : t -> t list
 val get_app_num_args : t -> int
+
+val for_all_fvars : (int -> bool) -> t -> bool
+(** [for_all_fvars p e]: every free variable of [e] satisfies [p]. *)
 
 val instantiate_rev : t -> t array -> t
 (** [instantiate_rev e subst] replaces loose [bvar i] ([i < n]) by [subst.(n-1-i)] and lowers the

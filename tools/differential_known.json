@@ -1,0 +1,78 @@
+[
+ {
+  "file": "bad/bugs/forged-quot-ind.ndjson",
+  "why": "nanoda 0.4.28 accepts this file (arena 'bugs' corpus: the expected verdict is reject, WARRANT agrees with the arena)"
+ },
+ {
+  "file": "bad/bugs/nested-name-capture.ndjson",
+  "why": "nanoda 0.4.28 accepts this file (arena 'bugs' corpus: the expected verdict is reject, WARRANT agrees with the arena)"
+ },
+ {
+  "file": "good/other/level-index-out-of-order.ndjson",
+  "why": "valid per the arena (accept expected); nanoda declines non-continuous level back-references as a format restriction"
+ },
+ {
+  "file": "good/other/sparse-name-index.ndjson",
+  "why": "valid per the arena (accept expected); nanoda declines non-continuous name back-references as a format restriction"
+ },
+ {
+  "file": "claim-is-reflexive.ndjson",
+  "why": "nanoda 0.4.28 does not check the claimed isReflexive flag of an inductive type; WARRANT derives it and rejects the lie"
+ },
+ {
+  "file": "literal-without-genuine-nat.ndjson",
+  "why": "WARRANT insists that Nat is the genuine inductive type before it types a natural number literal; Lean's kernel types the literal as the constant Nat whatever Nat is"
+ },
+ {
+  "file": "unsafe-axiom-mentions-unsafe.ndjson",
+  "why": "nanoda 0.4.28 does not accept unsafe declarations at all (assertion failed: !is_unsafe in its parser); WARRANT records them as constants no safe declaration may use"
+ },
+ {
+  "file": "unsafe-definition-mentions-unsafe.ndjson",
+  "why": "same: nanoda does not accept unsafe declarations"
+ },
+ {
+  "file": "blank-lines.ndjson",
+  "why": "nanoda reads an empty line as a record and fails; WARRANT skips empty lines (lean4export never writes them)"
+ },
+ {
+  "file": "nat-shiftleft-amount-at-limit.ndjson",
+  "why": "WARRANT computes 1 << 2^24 (a number of 2^24 bits) and accepts; nanoda is killed by the system while computing it (it puts no bound on the size of a shift, WARRANT declines beyond 2^24)"
+ },
+ {
+  "file": "prim-dependency-opaque.ndjson",
+  "why": "the negative control for the name-keyed shortcuts: Nat.add's helper is an opaque constant, so WARRANT's fingerprint no longer matches and 10^8 + 10^8 is not computed; nanoda enables the shortcut by the name Nat.add alone and accepts (the unsoundness WARRANT's fingerprints close)"
+ },
+ {
+  "file": "prim-dependency-axiom.ndjson",
+  "why": "same, with the helper an axiom of the genuine type"
+ },
+ {
+  "file": "string-mk-literal.ndjson",
+  "why": "a toolchain whose String has the constructor String.mk and no String.ofList: WARRANT expands a literal through either; nanoda panics in its string-literal expansion (assertion in tc.rs:1104) on such an environment"
+ },
+ {
+  "file": "nat-pow-size-at-limit.ndjson.gz",
+  "why": "WARRANT computes 32768^(2^24) (a number of 15*2^24 bits) and accepts; nanoda is killed by the system while computing it (no bound on sizes; WARRANT's limit is 2^28 bits)"
+ },
+ {
+  "file": "nat-shiftleft-amount-at-limit.ndjson.gz",
+  "why": "same: 1 << 2^24 at WARRANT's limit; nanoda is killed"
+ },
+ {
+  "file": "nat-mul-chain-of-squarings-20.ndjson.gz",
+  "why": "20 squarings of 2 give a number of 2^20 bits: WARRANT accepts; nanoda aborts (its arithmetic runs out of memory on the chain; the 29-step file WARRANT declines)"
+ },
+ {
+  "file": "mdata-is-transparent.ndjson",
+  "why": "a metadata node written by hand with an empty data field: WARRANT reads through it; nanoda panics on it (the cause was not investigated: its reader may expect the exporter's exact data field)"
+ },
+ {
+  "file": "unsafe-opaque-value-not-checked.ndjson",
+  "why": "nanoda has no unsafe declarations (already listed for the other unsafe files): it rejects the file"
+ },
+ {
+  "file": "unsafe-opaque-type-mentions-unsafe.ndjson",
+  "why": "same: nanoda has no unsafe declarations"
+ }
+]

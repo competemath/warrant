@@ -1,0 +1,60 @@
+# Differential run: WARRANT and nanoda (an independent checker, written in Rust, pinned to a commit) on the same files, the
+# arena corpus, the regressions and a round of forge cases. Any file one accepts and the other rejects fails the run unless
+# tools/differential_known.json says why it is understood. A disagreement is a lead: read both explanations before
+# deciding which side is wrong (see tools/differential.py).
+name: differential
+on:
+  schedule:
+    - cron: "17 5 * * 4"   # Thursdays
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: "Wall-clock budget for the forge part"
+        required: false
+        default: "900"
+permissions: {}
+concurrency:
+  group: differential
+  cancel-in-progress: false
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions: { contents: read }
+    steps:
+      - uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
+        with: { egress-policy: audit }
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ammkrn/nanoda_lib
+          ref: a3ef25a863f689d339277090588599dceb741149
+          path: nanoda
+          persist-credentials: false
+      - uses: ocaml/setup-ocaml@ff66428f72b64472e749b22e0ad4dded4b2ddca6 # v3.9.1
+        with:
+          ocaml-compiler: "5.3"
+          dune-cache: true
+      - run: opam install . --deps-only --yes && opam exec -- dune build @all
+      - name: Build nanoda
+        working-directory: nanoda
+        run: cargo build --release --locked
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with: { python-version: "3.12" }
+      - name: Compare
+        env:
+          SECONDS_BUDGET: ${{ inputs.seconds || '900' }}
+        run: |
+          echo '{"use_stdin": true, "nat_extension": true, "string_extension": true, "unpermitted_axiom_hard_error": false, "unsafe_permit_all_axioms": true, "num_threads": 1}' > "$RUNNER_TEMP/nanoda.json"
+          python3 tools/differential.py --binary _build/default/bin/main.exe \
+            --other "$GITHUB_WORKSPACE/nanoda/target/release/nanoda_bin $RUNNER_TEMP/nanoda.json < {file}" \
+            --dirs tests/arena tests/regressions --known tools/differential_known.json \
+            --forge-seconds "$SECONDS_BUDGET" --prelude tests/arena/good/init-prelude.ndjson --timeout 120 \
+            --out "$RUNNER_TEMP/differential"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: differential
+          path: ${{ runner.temp }}/differential
+          if-no-files-found: ignore

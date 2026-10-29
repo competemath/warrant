@@ -7,8 +7,15 @@ let table : (string * string list) list =
     ("Nat.beq", [ "cb3b839a0d1fe05b68c2c9ee99a11f4c2a0b79641f3cb212112a1f1d241f0f0c" ]);
     ("Nat.ble", [ "a13e786331c9c47e153cb8f3da0092c6bb63a895f2d1c73bfed8a6637bcfbe5e" ]);
     ("Nat.div", [ "2c104125938e3f73b1507d28810d17bb6a9731c2e5b084f833c90aeb444d43c1" ]);
+    ("Nat.gcd", [ "25a04f00019931225e0d75a06d411ee222af5a0fa5e59874e62245a7542565de" ]);
+    ("Nat.land", [ "da34ef1eefe0b53125f939f479108607aaf5c96ba0306f0f835b63b7b394bdf7" ]);
+    ("Nat.log2", [ "d7bd6c0a9bf1784610dd5cc63c3a9a62f911d47c921b7f2aaa006f33dd0d21a3" ]);
+    ("Nat.lor", [ "8ea35b0042befa4798078a64bcc281e2ca2fcfa7727f5249d805a0df76090a6e" ]);
     ("Nat.mod", [ "aa52c45849df2b1617108e2aec72180e1b62430cadf705029e04dece1c9679b3" ]);
     ("Nat.mul", [ "c6740e8d91ff0a554c557982a0897dc785572a9dcaeabdd37087a712584e5f3c" ]);
     ("Nat.pow", [ "a6a7ace2b78d1624bc2153d6b5e828a2bd10c58f293ca8cc38faa2e09c55e811" ]);
+    ("Nat.shiftLeft", [ "e2e710d1ecb22f1fbbb755cb6f9a92c5b32f2d52dc2c729a61c27675cad3a777" ]);
+    ("Nat.shiftRight", [ "187d6c1f7d3dc9efeed01e4d0a2e4603e90526ecb5fba856c38711443a5d371b" ]);
     ("Nat.sub", [ "0273c8aba0f7b9c61decf73569e75ab59cecdcf1f1063f4ccf4f5a713c6cc6fe" ]);
+    ("Nat.xor", [ "293b8ee2737b3c9852a2e1daed086af8de3f612739179d420f74e04fe3434092" ]);
   ]

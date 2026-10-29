@@ -6,7 +6,9 @@ declaration whose type is not what the file says. Please report anything that co
 ## How to report
 
 Use GitHub's private vulnerability reporting: open the **Security** tab of this repository and choose
-**Report a vulnerability**. The report stays private between you and the maintainers until a fix is out.
+**Report a vulnerability** (direct link: <https://github.com/competemath/warrant/security/advisories/new>). The report stays
+private between you and the maintainers until a fix is out. Fixes are published through a GitHub security advisory
+(<https://github.com/competemath/warrant/security/advisories>), which also carries the credit and the affected versions.
 
 A useful report is an export file (the `lean4export` NDJSON format) that WARRANT accepts and should reject, or
 rejects and should accept, with what you expected. A file that the official Lean kernel judges differently from
@@ -16,6 +18,8 @@ WARRANT is a report by itself.
 
 - **Soundness**: an accepted file in which a theorem's type is `False` or any other uninhabited proposition, or in
   which a declaration is accepted with a type it does not have.
+- **The test-only limits** (`WARRANT_FUEL`, `WARRANT_CACHE_LIMIT`, `WARRANT_HASH_MASK`, read in `src/knobs.ml`): they can
+  only lower a limit. A value that makes the checker accept a file it refuses without them is a soundness bug.
 - **The evidence discipline**: a way to construct an evidence value (`Wf`, `Typing`, `Conv`, `Prop`, `Inductive`)
   outside its minting module, or to carry one across an environment, universe substitution or context it was not
   minted for.

@@ -15,7 +15,6 @@ val succ : t -> t
 val max : t -> t -> t
 val imax : t -> t -> t
 val param : Name.t -> t
-val equal : t -> t -> bool
 val hash : t -> int
 val to_string : t -> string
 
