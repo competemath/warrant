@@ -282,12 +282,15 @@ let string_lit_to_ctor st s =
 let nat_binops : (Name.t * (Z.t -> Z.t -> E.t)) list =
   let lit f a b = E.nat (f a b) in
   let bool b = mk_const (if b then n_bool_true else n_bool_false) in
-  let max_pow = 1 lsl 24 in
-  let max_bits = 1 lsl 28 in
+  let max_pow = Knobs.limit "WARRANT_MAX_POW" (1 lsl 24) in
+  let max_bits = Knobs.limit "WARRANT_MAX_BITS" (1 lsl 28) in
   [
     (nm "Nat.add", lit Z.add);
     (nm "Nat.sub", lit (fun a b -> if Z.lt a b then Z.zero else Z.sub a b));
-    (nm "Nat.mul", lit Z.mul);
+    ( nm "Nat.mul",
+      fun a b ->
+        if Z.numbits a + Z.numbits b > max_bits then decline "mul: result too large"
+        else E.nat (Z.mul a b) );
     (nm "Nat.div", lit (fun a b -> if Z.equal b Z.zero then Z.zero else Z.div a b));
     (nm "Nat.mod", lit (fun a b -> if Z.equal b Z.zero then a else Z.rem a b));
     (nm "Nat.gcd", lit Z.gcd);

@@ -643,6 +643,107 @@
    "msg": "too large"
   },
   {
+   "path": "nat-small-limits-pow-exponent-at-limit.ndjson",
+   "expect": "accept",
+   "why": "1^10 with the exponent limit 10. A result past a limit is declined (found by mutation testing: nothing tested the size clauses of shiftLeft, nor that Nat.mul has one).",
+   "env": {
+    "WARRANT_MAX_POW": "10",
+    "WARRANT_MAX_BITS": "100"
+   }
+  },
+  {
+   "path": "nat-small-limits-pow-exponent-past-limit.ndjson",
+   "expect": "decline",
+   "why": "1^11 with the exponent limit 10. A result past a limit is declined (found by mutation testing: nothing tested the size clauses of shiftLeft, nor that Nat.mul has one).",
+   "msg": "too large",
+   "env": {
+    "WARRANT_MAX_POW": "10",
+    "WARRANT_MAX_BITS": "100"
+   }
+  },
+  {
+   "path": "nat-small-limits-pow-size-at-limit.ndjson",
+   "expect": "accept",
+   "why": "512^10: 10 bits times 10 is exactly the limit 100. A result past a limit is declined (found by mutation testing: nothing tested the size clauses of shiftLeft, nor that Nat.mul has one).",
+   "env": {
+    "WARRANT_MAX_POW": "10",
+    "WARRANT_MAX_BITS": "100"
+   }
+  },
+  {
+   "path": "nat-small-limits-pow-size-past-limit.ndjson",
+   "expect": "decline",
+   "why": "1024^10: 11 bits times 10 is 110, past the limit 100. A result past a limit is declined (found by mutation testing: nothing tested the size clauses of shiftLeft, nor that Nat.mul has one).",
+   "msg": "too large",
+   "env": {
+    "WARRANT_MAX_POW": "10",
+    "WARRANT_MAX_BITS": "100"
+   }
+  },
+  {
+   "path": "nat-small-limits-shiftleft-amount-at-limit.ndjson",
+   "expect": "accept",
+   "why": "1 << 10 with the amount limit 10. A result past a limit is declined (found by mutation testing: nothing tested the size clauses of shiftLeft, nor that Nat.mul has one).",
+   "env": {
+    "WARRANT_MAX_POW": "10",
+    "WARRANT_MAX_BITS": "100"
+   }
+  },
+  {
+   "path": "nat-small-limits-shiftleft-amount-past-limit.ndjson",
+   "expect": "decline",
+   "why": "1 << 11 with the amount limit 10. A result past a limit is declined (found by mutation testing: nothing tested the size clauses of shiftLeft, nor that Nat.mul has one).",
+   "msg": "too large",
+   "env": {
+    "WARRANT_MAX_POW": "10",
+    "WARRANT_MAX_BITS": "100"
+   }
+  },
+  {
+   "path": "nat-small-limits-shiftleft-size-at-limit.ndjson",
+   "expect": "accept",
+   "why": "2^89 has 90 bits; shifted by 10 it has 100, exactly the limit. A result past a limit is declined (found by mutation testing: nothing tested the size clauses of shiftLeft, nor that Nat.mul has one).",
+   "env": {
+    "WARRANT_MAX_POW": "10",
+    "WARRANT_MAX_BITS": "100"
+   }
+  },
+  {
+   "path": "nat-small-limits-shiftleft-size-past-limit.ndjson",
+   "expect": "decline",
+   "why": "2^90 has 91 bits; shifted by 10 it would have 101, past the limit 100. A result past a limit is declined (found by mutation testing: nothing tested the size clauses of shiftLeft, nor that Nat.mul has one).",
+   "msg": "too large",
+   "env": {
+    "WARRANT_MAX_POW": "10",
+    "WARRANT_MAX_BITS": "100"
+   }
+  },
+  {
+   "path": "nat-small-limits-mul-size-at-limit.ndjson",
+   "expect": "accept",
+   "why": "two numbers of 50 bits: a product of at most 100 bits. A result past a limit is declined (found by mutation testing: nothing tested the size clauses of shiftLeft, nor that Nat.mul has one).",
+   "env": {
+    "WARRANT_MAX_POW": "10",
+    "WARRANT_MAX_BITS": "100"
+   }
+  },
+  {
+   "path": "nat-small-limits-mul-size-past-limit.ndjson",
+   "expect": "decline",
+   "why": "numbers of 51 and 50 bits: a product that may have 101 bits. A result past a limit is declined (found by mutation testing: nothing tested the size clauses of shiftLeft, nor that Nat.mul has one).",
+   "msg": "too large",
+   "env": {
+    "WARRANT_MAX_POW": "10",
+    "WARRANT_MAX_BITS": "100"
+   }
+  },
+  {
+   "path": "constructor-claims-other-parameter-count.ndjson",
+   "expect": "reject",
+   "why": "T has no parameter and T.mk claims one (found by mutation testing).",
+   "msg": "number of parameters differs"
+  },
+  {
    "path": "string-literal-expands.ndjson",
    "expect": "accept",
    "why": "\"ab\" is String.ofList [97, 98]. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by no quick test (only by the full Init check)."

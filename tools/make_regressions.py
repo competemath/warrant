@@ -1189,13 +1189,20 @@ for path, decl, why in [
 DEFEQ_MSG = "the value does not have the declared type"
 
 
-def nat_def(name, term, claimed, expect, why, msg=None):
+def nat_def(name, term, claimed, expect, why, msg=None, env=None):
     """`d : T term := t` where `t : T claimed`: accepted exactly when term and claimed are definitionally equal."""
     b = Builder.extending(prims)
     b.axiom("T", [], ("pi", NAT, ("sort", ONE)))
     b.axiom("t", [], _app(("const", "T", []), ("nat", claimed)))
     b.definition("d", [], _app(("const", "T", []), term), ("const", "t", []))
-    add(name + ".ndjson", b.text(), expect, why, msg=msg or (DEFEQ_MSG if expect == "reject" else None))
+    add(
+        name + ".ndjson",
+        b.text(),
+        expect,
+        why,
+        msg=msg or (DEFEQ_MSG if expect == "reject" else None),
+        env=env,
+    )
 
 
 def N(op, *args):
@@ -1304,6 +1311,74 @@ for name, term, claimed, expect, why in [
         why + ". A decline is the checker saying it cannot decide, never a verdict.",
         msg="too large" if expect == "decline" else None,
     )
+
+# The same limits at small values (WARRANT_MAX_POW=10, WARRANT_MAX_BITS=100), at the edge and one past it: every clause of the
+# limits is pinned without a computation of millions of bits.
+SMALL = {"WARRANT_MAX_POW": "10", "WARRANT_MAX_BITS": "100"}
+for name, term, claimed, expect, why in [
+    ("pow-exponent-at-limit", N("Nat.pow", 1, 10), 1, "accept", "1^10 with the exponent limit 10"),
+    ("pow-exponent-past-limit", N("Nat.pow", 1, 11), 0, "decline", "1^11 with the exponent limit 10"),
+    ("pow-size-at-limit", N("Nat.pow", 512, 10), 2**90, "accept", "512^10: 10 bits times 10 is exactly the limit 100"),
+    (
+        "pow-size-past-limit",
+        N("Nat.pow", 1024, 10),
+        0,
+        "decline",
+        "1024^10: 11 bits times 10 is 110, past the limit 100",
+    ),
+    ("shiftleft-amount-at-limit", N("Nat.shiftLeft", 1, 10), 1024, "accept", "1 << 10 with the amount limit 10"),
+    ("shiftleft-amount-past-limit", N("Nat.shiftLeft", 1, 11), 0, "decline", "1 << 11 with the amount limit 10"),
+    (
+        "shiftleft-size-at-limit",
+        N("Nat.shiftLeft", 2**89, 10),
+        2**99,
+        "accept",
+        "2^89 has 90 bits; shifted by 10 it has 100, exactly the limit",
+    ),
+    (
+        "shiftleft-size-past-limit",
+        N("Nat.shiftLeft", 2**90, 10),
+        0,
+        "decline",
+        "2^90 has 91 bits; shifted by 10 it would have 101, past the limit 100",
+    ),
+    (
+        "mul-size-at-limit",
+        N("Nat.mul", 2**49, 2**49),
+        2**98,
+        "accept",
+        "two numbers of 50 bits: a product of at most 100 bits",
+    ),
+    (
+        "mul-size-past-limit",
+        N("Nat.mul", 2**50, 2**49),
+        0,
+        "decline",
+        "numbers of 51 and 50 bits: a product that may have 101 bits",
+    ),
+]:
+    nat_def(
+        "nat-small-limits-" + name,
+        term,
+        claimed,
+        expect,
+        why
+        + ". A result past a limit is declined (found by mutation testing: nothing tested the size clauses of shiftLeft, nor "
+        "that Nat.mul has one).",
+        msg="too large" if expect == "decline" else None,
+        env=SMALL,
+    )
+
+# the number of parameters a constructor claims is the type's
+b = base("Nat")
+one_field_block(b, NAT, NAT, lambda types, ctors, recs: ctors[0].update(num_params=1))
+add(
+    "constructor-claims-other-parameter-count.ndjson",
+    b.text(),
+    "reject",
+    "T has no parameter and T.mk claims one (found by mutation testing).",
+    msg="number of parameters differs",
+)
 
 # string literals: the meaning of "ab" is String.ofList [Char.ofNat 97, Char.ofNat 98]
 STRING = ("const", "String", [])
