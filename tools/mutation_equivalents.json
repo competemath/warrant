@@ -2391,7 +2391,7 @@
   "context": "if is_prop_type st raw_type || is_prop_type st e_type then e",
   "from": "is_prop_type st raw_type || is_prop_type st e_type",
   "to": "(is_prop_type st raw_type)",
-  "why": "ARGUED, not shown by a test: the structure counts as a proposition if the sort of its inferred type is Prop or the sort of its normal form is. A type and its normal form are convertible, and convertible well-typed terms have convertible types (type uniqueness), so the two sorts are the same level up to equivalence, and the second disjunct adds nothing for a well-typed term. No file can show otherwise; if the argument were wrong the full Init check, which has 3,409 projections, would show it."
+  "why": "ARGUED, not shown by a test: the structure counts as a proposition if the sort of its inferred type is Prop or the sort of its normal form is. A type and its normal form are convertible, and convertible well-typed terms have convertible types (type uniqueness), so the two sorts are the same level up to equivalence, and the second disjunct adds nothing for a well-typed term. It rests on the argument and on no test: the one place where a mutation here has not been shown to matter."
  },
  {
   "file": "src/check.ml",
@@ -3224,7 +3224,7 @@
   "context": "let is_prop = is_prop_type st raw_ty || is_prop_type st st_ty in",
   "from": "is_prop_type st raw_ty || is_prop_type st st_ty",
   "to": "(is_prop_type st raw_ty)",
-  "why": "ARGUED, not shown by a test: the structure counts as a proposition if the sort of its inferred type is Prop or the sort of its normal form is. A type and its normal form are convertible, and convertible well-typed terms have convertible types (type uniqueness), so the two sorts are the same level up to equivalence, and the second disjunct adds nothing for a well-typed term. No file can show otherwise; if the argument were wrong the full Init check, which has 3,409 projections, would show it."
+  "why": "ARGUED, not shown by a test: the structure counts as a proposition if the sort of its inferred type is Prop or the sort of its normal form is. A type and its normal form are convertible, and convertible well-typed terms have convertible types (type uniqueness), so the two sorts are the same level up to equivalence, and the second disjunct adds nothing for a well-typed term. It rests on the argument and on no test: the one place where a mutation here has not been shown to matter."
  },
  {
   "file": "src/tc.ml",
@@ -5380,7 +5380,7 @@
   "context": "if is_prop_type st raw_type || is_prop_type st e_type then e",
   "from": "is_prop_type st raw_type || is_prop_type st e_type",
   "to": "(is_prop_type st e_type)",
-  "why": "ARGUED, not shown by a test: the structure counts as a proposition if the sort of its inferred type is Prop or the sort of its normal form is. A type and its normal form are convertible, and convertible well-typed terms have convertible types (type uniqueness), so the two sorts are the same level up to equivalence, and the second disjunct adds nothing for a well-typed term. No file can show otherwise; if the argument were wrong the full Init check, which has 3,409 projections, would show it."
+  "why": "ARGUED, not shown by a test: the structure counts as a proposition if the sort of its inferred type is Prop or the sort of its normal form is. A type and its normal form are convertible, and convertible well-typed terms have convertible types (type uniqueness), so the two sorts are the same level up to equivalence, and the second disjunct adds nothing for a well-typed term. It rests on the argument and on no test: the one place where a mutation here has not been shown to matter."
  },
  {
   "file": "src/level.ml",
