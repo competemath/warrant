@@ -311,12 +311,69 @@ add(
     "refused it (completeness: nothing else noticed).",
 )
 
+# an ill-typed subterm whose type, inferred without looking inside it, is the expected one
+BOOL = ("const", "Bool", [])
+B_TRUE = ("const", "Bool.true", [])
+N_ZERO = ("const", "Nat.zero", [])
+T_OF = ("const", "T", [])
+G_OF = ("const", "g", [])
+
+
+def ill_typed_base():
+    b = base("Nat", "Nat.succ", "Nat.zero", "Bool", "Bool.true")
+    b.axiom("g", [], ("pi", NAT, NAT))
+    b.definition("T", [], ("pi", BOOL, ("sort", ONE)), ("lam", BOOL, NAT), hints="regular")
+    return b
+
+
+b = ill_typed_base()
+b.definition("bad", [], ("pi", NAT, NAT), ("lam", _app(T_OF, N_ZERO), ("bvar", 0)))
+add(
+    "ill-typed-lambda-domain.ndjson",
+    b.text(),
+    "reject",
+    "fun (x : T Nat.zero) => x with T : Bool -> Type: the domain applies T to a Nat. Its type, inferred without looking inside "
+    "the application, is a sort, and T Nat.zero unfolds to Nat so the lambda's type fits the declared Nat -> Nat. A binder domain "
+    "must itself be checked; a mutation that only inferred its type accepted this.",
+    msg="application type mismatch",
+)
+b = ill_typed_base()
+b.definition("bad", [], NAT, nat_succ(_app(G_OF, B_TRUE)))
+add(
+    "ill-typed-application-argument.ndjson",
+    b.text(),
+    "reject",
+    "Nat.succ (g Bool.true) with g : Nat -> Nat: the argument g Bool.true has type Nat when inferred without looking inside it, "
+    "but applies g to a Bool. Arguments are checked, not just typed; a mutation that skipped that accepted this.",
+    msg="application type mismatch",
+)
+b = ill_typed_base()
+b.definition("bad", [], NAT, ("let", NAT, _app(G_OF, B_TRUE), ("bvar", 0)))
+add(
+    "ill-typed-let-value.ndjson",
+    b.text(),
+    "reject",
+    "let x : Nat := g Bool.true; x: the value is ill-typed (g applied to a Bool) though its type is Nat. A let value is checked; a "
+    "mutation that only inferred its type accepted this.",
+    msg="application type mismatch",
+)
+b = ill_typed_base()
+b.definition("bad", [], NAT, ("let", _app(T_OF, N_ZERO), N_ZERO, ("bvar", 0)))
+add(
+    "ill-typed-let-type.ndjson",
+    b.text(),
+    "reject",
+    "let x : T Nat.zero := Nat.zero; x: the let's type applies T : Bool -> Type to a Nat. A let type is checked; a mutation that "
+    "only inferred its sort accepted this.",
+    msg="application type mismatch",
+)
+
 # `outParam` only counts as a binder annotation when the file defines it as the identity-like function
 T = ("const", "T", [])
 MK = ("const", "T.mk", [])
 
 
-def one_field_block(b, field_ty, claimed_field_ty):
+def one_field_block(b, field_ty, claimed_field_ty, tweak=None):
     """inductive T : Type | mk : field_ty -> T, with a recursor whose minor premise is claimed to take claimed_field_ty."""
     u = ("param", "u")
     motive_t = ("pi", T, ("sort", u))
@@ -324,48 +381,49 @@ def one_field_block(b, field_ty, claimed_field_ty):
     def minor_t(fty):
         return ("pi", fty, ("app", ("bvar", 1), ("app", MK, ("bvar", 0))))
 
-    b.inductive(
-        [{"name": "T", "type": ("sort", ONE), "num_params": 0, "ctors": ["T.mk"]}],
-        [
-            {
-                "name": "T.mk",
-                "induct": "T",
-                "type": ("pi", field_ty, T),
-                "cidx": 0,
-                "num_params": 0,
-                "num_fields": 1,
-            }
-        ],
-        [
-            {
-                "name": "T.rec",
-                "lparams": ["u"],
-                "type": (
-                    "pi",
-                    motive_t,
-                    ("pi", minor_t(claimed_field_ty), ("pi", T, ("app", ("bvar", 2), ("bvar", 0)))),
-                ),
-                "num_params": 0,
-                "num_motives": 1,
-                "num_minors": 1,
-                "rules": [
+    types = [{"name": "T", "type": ("sort", ONE), "num_params": 0, "ctors": ["T.mk"]}]
+    ctors = [
+        {
+            "name": "T.mk",
+            "induct": "T",
+            "type": ("pi", field_ty, T),
+            "cidx": 0,
+            "num_params": 0,
+            "num_fields": 1,
+        }
+    ]
+    recs = [
+        {
+            "name": "T.rec",
+            "lparams": ["u"],
+            "type": (
+                "pi",
+                motive_t,
+                ("pi", minor_t(claimed_field_ty), ("pi", T, ("app", ("bvar", 2), ("bvar", 0)))),
+            ),
+            "num_params": 0,
+            "num_motives": 1,
+            "num_minors": 1,
+            "rules": [
+                (
+                    "T.mk",
+                    1,
                     (
-                        "T.mk",
-                        1,
+                        "lam",
+                        motive_t,
                         (
                             "lam",
-                            motive_t,
-                            (
-                                "lam",
-                                minor_t(claimed_field_ty),
-                                ("lam", claimed_field_ty, ("app", ("bvar", 1), ("bvar", 0))),
-                            ),
+                            minor_t(claimed_field_ty),
+                            ("lam", claimed_field_ty, ("app", ("bvar", 1), ("bvar", 0))),
                         ),
-                    )
-                ],
-            }
-        ],
-    )
+                    ),
+                )
+            ],
+        }
+    ]
+    if tweak:
+        tweak(types, ctors, recs)
+    b.inductive(types, ctors, recs)
 
 
 b = base("Nat")
@@ -568,6 +626,305 @@ add(
     "comparison has no meaning and is refused for that reason; a mutation that accepted the constant when either its universe "
     "parameters or its type fit expanded the literal anyway and failed later, for another reason.",
     msg="string literal: the environment has no String.ofList or String.mk of type List Char -> String",
+)
+
+
+# ---- found by listing the checker's reject sites that no test file ever ended with ----
+def refuse(name, text, why, msg):
+    add(name + ".ndjson", text, "reject", why, msg=msg)
+
+
+def claims(name, claim, tweak, msg):
+    b = base("Nat")
+    one_field_block(b, NAT, NAT, tweak=tweak)
+    refuse(
+        name,
+        b.text(),
+        f"inductive T := mk (n : Nat) with one claim about the block changed: {claim}. Every such claim is derived from the types "
+        "and constructors and compared; none is trusted.",
+        msg,
+    )
+
+
+claims(
+    "claim-is-rec",
+    "isRec true on a type that is not recursive",
+    lambda t, c, r: t[0].update(is_rec=True),
+    "claimed isRec of T differs from the derivation",
+)
+claims(
+    "claim-is-reflexive",
+    "isReflexive true",
+    lambda t, c, r: t[0].update(is_reflexive=True),
+    "claimed isReflexive of T differs from the derivation",
+)
+claims(
+    "claim-num-nested",
+    "numNested 1",
+    lambda t, c, r: t[0].update(num_nested=1),
+    "claimed numNested of T differs from the derivation",
+)
+claims(
+    "claim-num-indices",
+    "numIndices 1",
+    lambda t, c, r: t[0].update(num_indices=1),
+    "claimed numIndices of T differs from the derivation",
+)
+claims(
+    "claim-rec-all",
+    "the recursor's 'all' lists another type",
+    lambda t, c, r: r[0].update(all=["T", "Nat"]),
+    "T.rec: 'all' differs from the derivation",
+)
+claims(
+    "claim-rec-minors",
+    "two minor premises",
+    lambda t, c, r: r[0].update(num_minors=2),
+    "T.rec: parameter, index, motive or minor counts differ from the derivation",
+)
+claims(
+    "claim-rec-rules",
+    "no computation rule",
+    lambda t, c, r: r[0].update(rules=[]),
+    "T.rec: number of rules differs from the derivation",
+)
+claims(
+    "claim-rec-k", "the K flag", lambda t, c, r: r[0].update(k=True), "T.rec: the K flag differs from the derivation"
+)
+
+b = Builder()
+b.inductive([])
+refuse("empty-inductive-block", b.text(), "an inductive block with no types.", "empty inductive block")
+
+b = Builder()
+b.inductive(
+    [
+        {"name": "A", "type": ("sort", ONE), "num_params": 0, "lparams": ["u"]},
+        {"name": "B", "type": ("sort", ONE), "num_params": 0},
+    ]
+)
+refuse(
+    "block-universe-parameters",
+    b.text(),
+    "A takes a universe parameter and B none, in one block.",
+    "inductive block: universe parameters differ between types",
+)
+
+b = Builder()
+b.inductive(
+    [
+        {"name": "A", "type": ("pi", ("sort", ONE), ("sort", ONE)), "num_params": 1},
+        {"name": "B", "type": ("sort", ONE), "num_params": 0},
+    ]
+)
+refuse(
+    "block-parameter-count",
+    b.text(),
+    "A has one parameter and B none, in one block.",
+    "inductive block: number of parameters differs between types",
+)
+
+b = Builder()
+b.inductive(
+    [
+        {"name": "A", "type": ("sort", ONE), "num_params": 0, "all": ["A"]},
+        {"name": "B", "type": ("sort", ONE), "num_params": 0},
+    ]
+)
+refuse(
+    "block-all-not-the-block",
+    b.text(),
+    "A's 'all' lists only A although B is declared with it.",
+    "inductive block: 'all' is not the block",
+)
+
+b = Builder()
+b.inductive([{"name": "A", "type": ("sort", ONE), "num_params": 0}, {"name": "B", "type": PROP, "num_params": 0}])
+refuse(
+    "block-universes-differ",
+    b.text(),
+    "A : Type and B : Prop in one mutual block: the types must live in one universe.",
+    "mutually inductive types must live in the same universe",
+)
+
+# the export's own references
+head = json.dumps(META, separators=(",", ":"))
+add(
+    "dangling-reference.ndjson",
+    head + '\n{"ie":0,"sort":5}\n',
+    "reject",
+    "an expression refers to level 5, which was never defined.",
+    msg="dangling",
+)
+add(
+    "index-defined-twice.ndjson",
+    head + '\n{"in":1,"str":{"pre":0,"str":"x"}}\n{"in":1,"str":{"pre":0,"str":"y"}}\n',
+    "reject",
+    "name 1 is defined twice.",
+    msg="defined twice",
+)
+
+# quotients
+QU = ("param", "u")
+QUOT_TY = ("pi", ("sort", QU), ("pi", ("pi", ("bvar", 0), ("pi", ("bvar", 1), PROP)), ("sort", QU)))
+b = Builder()
+b.quot("type", "Quot", ["u"], QUOT_TY)
+refuse(
+    "quot-without-eq",
+    b.text(),
+    "Quot declared in a file with no Eq: the quotient rules are stated through Eq.",
+    "quotient: Eq is not declared",
+)
+b = base("Eq", "Nat")
+b.quot("type", "Foo", ["u"], ("sort", ONE))
+refuse(
+    "quot-unexpected-name",
+    b.text(),
+    "a quotient declaration named Foo: only Quot, Quot.mk, Quot.lift and Quot.ind exist.",
+    "quotient: unexpected name",
+)
+b = base("Eq", "Nat")
+b.quot("type", "Quot", ["u", "v"], ("sort", ONE))
+refuse(
+    "quot-wrong-universes",
+    b.text(),
+    "Quot declared with two universe parameters instead of one.",
+    "quotient: wrong universe parameters",
+)
+b = base("Eq", "Nat")
+b.quot("type", "Quot", ["u"], ("sort", ONE))
+refuse(
+    "quot-wrong-type",
+    b.text(),
+    "Quot declared with type Type instead of {a : Sort u} -> (a -> a -> Prop) -> Sort u.",
+    "quotient: the type of Quot is not the expected one",
+)
+# an Eq that is an inductive family but not the one the quotient rules need (PUnit under the names Eq and Eq.refl)
+with open(PRELUDE_PATH, encoding="utf-8") as f:
+    punit = slice_lines(f, ["PUnit", "PUnit.unit"])
+renamed = []
+for ln in punit:
+    o = json.loads(ln)
+    if "in" in o and "str" in o and o["str"]["str"] in ("PUnit", "unit"):
+        o["str"]["str"] = {"PUnit": "Eq", "unit": "refl"}[o["str"]["str"]]
+    renamed.append(json.dumps(o, separators=(",", ":"), sort_keys=True))
+b = Builder.extending(renamed)
+b.quot("type", "Quot", ["u"], QUOT_TY)
+refuse(
+    "quot-eq-wrong-shape",
+    b.text(),
+    "Eq is an inductive family with one constructor, but a one-universe PUnit in disguise: no parameters, no index. The quotient "
+    "rules need the real Eq.",
+    "quotient: Eq is not the expected inductive family",
+)
+
+# literals and levels and applications
+b = Builder()
+b.axiom("Nat", [], ("sort", ONE))
+b.definition("d", [], ("const", "Nat", []), ("nat", 5))
+refuse(
+    "literal-without-genuine-nat",
+    b.text(),
+    "a natural number literal in a file whose Nat is an axiom, not the inductive type.",
+    "natural number literal: the environment's Nat is not the genuine one",
+)
+b = Builder()
+b.axiom("Nat", [], ("sort", ONE))
+b.definition("d", [], ("sort", ONE), ("str", "a"))
+refuse(
+    "string-literal-without-string",
+    b.text(),
+    "a string literal in a file with no String.",
+    "String literal without String",
+)
+b = Builder()
+b.axiom("a", ["u"], ("sort", ("param", "u")))
+b.definition("d", [], ("sort", ONE), ("const", "a", []))
+refuse(
+    "wrong-number-of-levels", b.text(), "a.{u} used with no universe level.", "wrong number of universe levels for a"
+)
+b = base("Nat", "Nat.zero")
+b.definition("d", [], NAT, _app(N_ZERO, N_ZERO))
+refuse("function-expected", b.text(), "Nat.zero applied to an argument: it is not a function.", "function expected")
+
+# opaque
+b = base("Nat", "Nat.zero", "Bool", "Bool.true")
+b.opaque("o", [], NAT, B_TRUE)
+refuse(
+    "opaque-wrong-type",
+    b.text(),
+    "an opaque constant of type Nat whose value is Bool.true.",
+    "the value does not have the declared type",
+)
+
+# a nested occurrence whose other parameters mention a field of the constructor
+b = base("Nat", "PProd", "Eq")
+eq_xx = _app(("const", "Eq", [ONE]), NAT, ("bvar", 0), ("bvar", 0))
+b.inductive(
+    [{"name": "T", "type": ("sort", ONE), "num_params": 0, "ctors": ["T.mk"]}],
+    [
+        {
+            "name": "T.mk",
+            "induct": "T",
+            "type": ("pi", NAT, ("pi", _app(("const", "PProd", [ONE, 0]), T, eq_xx), T)),
+            "cidx": 0,
+            "num_params": 0,
+            "num_fields": 2,
+        }
+    ],
+)
+refuse(
+    "nested-parameter-with-local",
+    b.text(),
+    "T := mk (x : Nat) (PProd T (x = x)): T occurs inside PProd, whose other argument mentions the field x. A nested occurrence's "
+    "parameters may not contain local variables.",
+    "invalid nested inductive datatype",
+)
+
+claims(
+    "claim-ctor-index",
+    "constructor mk has index 1 though it is the first",
+    lambda t, c, r: c[0].update(cidx=1),
+    "constructor T.mk has the wrong index",
+)
+claims(
+    "claim-ctor-undeclared",
+    "the type lists mk but no constructor declaration is given",
+    lambda t, c, r: c.clear(),
+    "constructor T.mk is listed but not declared",
+)
+claims(
+    "claim-recursor-missing",
+    "no recursor is given",
+    lambda t, c, r: r.clear(),
+    "recursor T.rec is derived but missing from the file",
+)
+
+b = Builder()
+b.inductive(
+    [
+        {"name": "A", "type": ("sort", ONE), "num_params": 0, "ctors": ["B.mk"]},
+        {"name": "B", "type": ("sort", ONE), "num_params": 0},
+    ],
+    [{"name": "B.mk", "induct": "B", "type": B, "cidx": 0, "num_params": 0, "num_fields": 0}],
+)
+refuse(
+    "claim-ctor-under-another-type",
+    b.text(),
+    "the type A lists B.mk as its constructor but B.mk is declared as a constructor of B.",
+    "constructor B.mk is listed under another type",
+)
+
+b = Builder()
+b.inductive(
+    [{"name": "T", "type": ("pi", ("sort", ONE), ("sort", ONE)), "num_params": 1, "ctors": ["T.mk"]}],
+    [{"name": "T.mk", "induct": "T", "type": ("const", "T", []), "cidx": 0, "num_params": 1, "num_fields": 0}],
+)
+refuse(
+    "constructor-too-few-parameters",
+    b.text(),
+    "T takes one parameter but the type of T.mk has no binder for it.",
+    "constructor T.mk: too few parameters",
 )
 
 # a mutual block whose types take different parameters

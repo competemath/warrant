@@ -44,6 +44,8 @@ jobs:
       - name: Arena corpus and regressions
         # a file the kernel cannot finish in the time is a decline, never an accept; the manifests say which may time out
         run: python3 tools/arena.py --binary _build/default/bin/main.exe --timeout 120 --quiet tests/arena tests/regressions
+      - name: Every refusal the checker can make has a test (or is listed as unreachable, with the reason)
+        run: python3 tools/reject_coverage.py --binary _build/default/bin/main.exe --allow tools/reject_unreachable.json tests/arena tests/regressions
       - name: Forge, a short round (random files with verdicts known by construction)
         run: |
           python3 tools/forge/forge.py --binary _build/default/bin/main.exe --seconds 60 --out "$RUNNER_TEMP/forge" \

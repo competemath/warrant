@@ -1,0 +1,132 @@
+[
+ {
+  "file": "src/env.ml",
+  "needle": ": evidence was derived in another environment",
+  "why": "evidence discipline: the kernel mints evidence for the environment and universe parameters it is used in, and the type checker never produces an unsafe-checked proof; reaching this means the kernel itself is wrong, and the compile-fail tests cover the type-level part"
+ },
+ {
+  "file": "src/env.ml",
+  "needle": ": evidence holds under other universe parameters",
+  "why": "evidence discipline: the kernel mints evidence for the environment and universe parameters it is used in, and the type checker never produces an unsafe-checked proof; reaching this means the kernel itself is wrong, and the compile-fail tests cover the type-level part"
+ },
+ {
+  "file": "src/env.ml",
+  "needle": "axiom: its type was checked as an unsafe declaration's",
+  "why": "evidence discipline: the kernel mints evidence for the environment and universe parameters it is used in, and the type checker never produces an unsafe-checked proof; reaching this means the kernel itself is wrong, and the compile-fail tests cover the type-level part"
+ },
+ {
+  "file": "src/env.ml",
+  "needle": ": its type was checked as an unsafe declaration's",
+  "why": "evidence discipline: the kernel mints evidence for the environment and universe parameters it is used in, and the type checker never produces an unsafe-checked proof; reaching this means the kernel itself is wrong, and the compile-fail tests cover the type-level part"
+ },
+ {
+  "file": "src/env.ml",
+  "needle": ": the conversion is not between the value's type and the declared type",
+  "why": "evidence discipline: the kernel mints evidence for the environment and universe parameters it is used in, and the type checker never produces an unsafe-checked proof; reaching this means the kernel itself is wrong, and the compile-fail tests cover the type-level part"
+ },
+ {
+  "file": "src/env.ml",
+  "needle": "theorem: the proposition evidence is not about the declared type",
+  "why": "evidence discipline: the kernel mints evidence for the environment and universe parameters it is used in, and the type checker never produces an unsafe-checked proof; reaching this means the kernel itself is wrong, and the compile-fail tests cover the type-level part"
+ },
+ {
+  "file": "src/ind.ml",
+  "needle": "internal: not a valid inductive application",
+  "why": "internal invariant: no input reaches it (free variables are made by the checker; closed terms are required before inference; a projection's structure type has exactly its parameters because it has no indices)"
+ },
+ {
+  "file": "src/ind.ml",
+  "needle": "ill-formed nested inductive declaration",
+  "why": "consistency of data the checker built from the environment's own inductive types (a nested container's constructors and its declaration agree): no file reaches it"
+ },
+ {
+  "file": "src/ind.ml",
+  "needle": "nested inductive: unknown constructor",
+  "why": "consistency of data the checker built from the environment's own inductive types (a nested container's constructors and its declaration agree): no file reaches it"
+ },
+ {
+  "file": "src/ind.ml",
+  "needle": "nested inductive: unknown inductive type",
+  "why": "consistency of data the checker built from the environment's own inductive types (a nested container's constructors and its declaration agree): no file reaches it"
+ },
+ {
+  "file": "src/ind.ml",
+  "needle": "internal: restoring a term without its parameters",
+  "why": "internal invariant: no input reaches it (free variables are made by the checker; closed terms are required before inference; a projection's structure type has exactly its parameters because it has no indices)"
+ },
+ {
+  "file": "src/ind.ml",
+  "needle": "internal: auxiliary type applied to too few arguments",
+  "why": "internal invariant: no input reaches it (free variables are made by the checker; closed terms are required before inference; a projection's structure type has exactly its parameters because it has no indices)"
+ },
+ {
+  "file": "src/ind.ml",
+  "needle": "internal: auxiliary constructor applied to too few arguments",
+  "why": "internal invariant: no input reaches it (free variables are made by the checker; closed terms are required before inference; a projection's structure type has exactly its parameters because it has no indices)"
+ },
+ {
+  "file": "src/ind.ml",
+  "needle": "internal: nested type",
+  "why": "internal invariant: no input reaches it (free variables are made by the checker; closed terms are required before inference; a projection's structure type has exactly its parameters because it has no indices)"
+ },
+ {
+  "file": "src/ind.ml",
+  "needle": "recursor type is not a telescope",
+  "why": "read off the recursors the checker derived itself, never off a claimed one"
+ },
+ {
+  "file": "src/ind.ml",
+  "needle": "recursor: the major premise is not an inductive type",
+  "why": "read off the recursors the checker derived itself, never off a claimed one"
+ },
+ {
+  "file": "src/ind.ml",
+  "needle": ": its type differs from the derivation",
+  "why": "a constructor's claimed type is the input of its derivation: the two are the same term"
+ },
+ {
+  "file": "src/ind.ml",
+  "needle": "internal: constructor",
+  "why": "internal invariant: no input reaches it (free variables are made by the checker; closed terms are required before inference; a projection's structure type has exactly its parameters because it has no indices)"
+ },
+ {
+  "file": "src/tc.ml",
+  "needle": "unknown free variable",
+  "why": "internal invariant: no input reaches it (free variables are made by the checker; closed terms are required before inference; a projection's structure type has exactly its parameters because it has no indices)"
+ },
+ {
+  "file": "src/tc.ml",
+  "needle": "loose bound variable",
+  "why": "internal invariant: no input reaches it (free variables are made by the checker; closed terms are required before inference; a projection's structure type has exactly its parameters because it has no indices)"
+ },
+ {
+  "file": "src/tc.ml",
+  "needle": "projection: wrong number of parameters",
+  "why": "internal invariant: no input reaches it (free variables are made by the checker; closed terms are required before inference; a projection's structure type has exactly its parameters because it has no indices)"
+ },
+ {
+  "file": "src/tc.ml",
+  "needle": "internal: a value is never checked under the unsafe allowance",
+  "why": "internal invariant: no input reaches it (free variables are made by the checker; closed terms are required before inference; a projection's structure type has exactly its parameters because it has no indices)"
+ },
+ {
+  "file": "src/tc.ml",
+  "needle": "internal: a conversion is never checked under the unsafe allowance",
+  "why": "internal invariant: no input reaches it (free variables are made by the checker; closed terms are required before inference; a projection's structure type has exactly its parameters because it has no indices)"
+ },
+ {
+  "file": "src/tc.ml",
+  "needle": "evidence from another environment",
+  "why": "internal invariant: no input reaches it (free variables are made by the checker; closed terms are required before inference; a projection's structure type has exactly its parameters because it has no indices)"
+ },
+ {
+  "file": "src/tc.ml",
+  "needle": "internal: a proposition is never decided under the unsafe allowance",
+  "why": "internal invariant: no input reaches it (free variables are made by the checker; closed terms are required before inference; a projection's structure type has exactly its parameters because it has no indices)"
+ },
+ {
+  "file": "src/tc.ml",
+  "needle": "evidence from another environment",
+  "why": "internal invariant: no input reaches it (free variables are made by the checker; closed terms are required before inference; a projection's structure type has exactly its parameters because it has no indices)"
+ }
+]

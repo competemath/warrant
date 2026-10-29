@@ -14,5 +14,13 @@
  {
   "file": "good/other/sparse-name-index.ndjson",
   "why": "valid per the arena (accept expected); nanoda declines non-continuous name back-references as a format restriction"
+ },
+ {
+  "file": "claim-is-reflexive.ndjson",
+  "why": "nanoda 0.4.28 does not check the claimed isReflexive flag of an inductive type; WARRANT derives it and rejects the lie"
+ },
+ {
+  "file": "literal-without-genuine-nat.ndjson",
+  "why": "WARRANT insists that Nat is the genuine inductive type before it types a natural number literal; Lean's kernel types the literal as the constant Nat whatever Nat is"
  }
 ]

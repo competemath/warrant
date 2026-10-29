@@ -108,6 +108,30 @@
    "why": "Prod.rec (fun a b => a) p0 = p0.1 for an axiom p0 : Nat x Nat holds by structure eta: the stuck major premise is replaced by Prod.mk p0.1 p0.2 before the rule fires. A mutation that skipped the expansion for every constant that is not a constructor refused it (completeness: nothing else noticed)."
   },
   {
+   "path": "ill-typed-lambda-domain.ndjson",
+   "expect": "reject",
+   "why": "fun (x : T Nat.zero) => x with T : Bool -> Type: the domain applies T to a Nat. Its type, inferred without looking inside the application, is a sort, and T Nat.zero unfolds to Nat so the lambda's type fits the declared Nat -> Nat. A binder domain must itself be checked; a mutation that only inferred its type accepted this.",
+   "msg": "application type mismatch"
+  },
+  {
+   "path": "ill-typed-application-argument.ndjson",
+   "expect": "reject",
+   "why": "Nat.succ (g Bool.true) with g : Nat -> Nat: the argument g Bool.true has type Nat when inferred without looking inside it, but applies g to a Bool. Arguments are checked, not just typed; a mutation that skipped that accepted this.",
+   "msg": "application type mismatch"
+  },
+  {
+   "path": "ill-typed-let-value.ndjson",
+   "expect": "reject",
+   "why": "let x : Nat := g Bool.true; x: the value is ill-typed (g applied to a Bool) though its type is Nat. A let value is checked; a mutation that only inferred its type accepted this.",
+   "msg": "application type mismatch"
+  },
+  {
+   "path": "ill-typed-let-type.ndjson",
+   "expect": "reject",
+   "why": "let x : T Nat.zero := Nat.zero; x: the let's type applies T : Bool -> Type to a Nat. A let type is checked; a mutation that only inferred its sort accepted this.",
+   "msg": "application type mismatch"
+  },
+  {
    "path": "out-param-axiom-not-stripped.ndjson",
    "expect": "reject",
    "why": "outParam is an axiom here, so `outParam Nat` is an ordinary type and the recursor's minor premise must take `outParam Nat`, not `Nat`. The annotation is stripped only when the file's own definition is the identity-like one; a mutation that stripped it for any constant with another kind of declaration accepted the claimed recursor.",
@@ -135,6 +159,192 @@
    "expect": "reject",
    "why": "String.ofList is an axiom Nat -> String here and the file compares the literal \"a\" with String.ofList 5. A literal expands through the file's own String.ofList only when it has type List Char -> String (there is no String.mk here either), so the comparison has no meaning and is refused for that reason; a mutation that accepted the constant when either its universe parameters or its type fit expanded the literal anyway and failed later, for another reason.",
    "msg": "string literal: the environment has no String.ofList or String.mk of type List Char -> String"
+  },
+  {
+   "path": "claim-is-rec.ndjson",
+   "expect": "reject",
+   "why": "inductive T := mk (n : Nat) with one claim about the block changed: isRec true on a type that is not recursive. Every such claim is derived from the types and constructors and compared; none is trusted.",
+   "msg": "claimed isRec of T differs from the derivation"
+  },
+  {
+   "path": "claim-is-reflexive.ndjson",
+   "expect": "reject",
+   "why": "inductive T := mk (n : Nat) with one claim about the block changed: isReflexive true. Every such claim is derived from the types and constructors and compared; none is trusted.",
+   "msg": "claimed isReflexive of T differs from the derivation"
+  },
+  {
+   "path": "claim-num-nested.ndjson",
+   "expect": "reject",
+   "why": "inductive T := mk (n : Nat) with one claim about the block changed: numNested 1. Every such claim is derived from the types and constructors and compared; none is trusted.",
+   "msg": "claimed numNested of T differs from the derivation"
+  },
+  {
+   "path": "claim-num-indices.ndjson",
+   "expect": "reject",
+   "why": "inductive T := mk (n : Nat) with one claim about the block changed: numIndices 1. Every such claim is derived from the types and constructors and compared; none is trusted.",
+   "msg": "claimed numIndices of T differs from the derivation"
+  },
+  {
+   "path": "claim-rec-all.ndjson",
+   "expect": "reject",
+   "why": "inductive T := mk (n : Nat) with one claim about the block changed: the recursor's 'all' lists another type. Every such claim is derived from the types and constructors and compared; none is trusted.",
+   "msg": "T.rec: 'all' differs from the derivation"
+  },
+  {
+   "path": "claim-rec-minors.ndjson",
+   "expect": "reject",
+   "why": "inductive T := mk (n : Nat) with one claim about the block changed: two minor premises. Every such claim is derived from the types and constructors and compared; none is trusted.",
+   "msg": "T.rec: parameter, index, motive or minor counts differ from the derivation"
+  },
+  {
+   "path": "claim-rec-rules.ndjson",
+   "expect": "reject",
+   "why": "inductive T := mk (n : Nat) with one claim about the block changed: no computation rule. Every such claim is derived from the types and constructors and compared; none is trusted.",
+   "msg": "T.rec: number of rules differs from the derivation"
+  },
+  {
+   "path": "claim-rec-k.ndjson",
+   "expect": "reject",
+   "why": "inductive T := mk (n : Nat) with one claim about the block changed: the K flag. Every such claim is derived from the types and constructors and compared; none is trusted.",
+   "msg": "T.rec: the K flag differs from the derivation"
+  },
+  {
+   "path": "empty-inductive-block.ndjson",
+   "expect": "reject",
+   "why": "an inductive block with no types.",
+   "msg": "empty inductive block"
+  },
+  {
+   "path": "block-universe-parameters.ndjson",
+   "expect": "reject",
+   "why": "A takes a universe parameter and B none, in one block.",
+   "msg": "inductive block: universe parameters differ between types"
+  },
+  {
+   "path": "block-parameter-count.ndjson",
+   "expect": "reject",
+   "why": "A has one parameter and B none, in one block.",
+   "msg": "inductive block: number of parameters differs between types"
+  },
+  {
+   "path": "block-all-not-the-block.ndjson",
+   "expect": "reject",
+   "why": "A's 'all' lists only A although B is declared with it.",
+   "msg": "inductive block: 'all' is not the block"
+  },
+  {
+   "path": "block-universes-differ.ndjson",
+   "expect": "reject",
+   "why": "A : Type and B : Prop in one mutual block: the types must live in one universe.",
+   "msg": "mutually inductive types must live in the same universe"
+  },
+  {
+   "path": "dangling-reference.ndjson",
+   "expect": "reject",
+   "why": "an expression refers to level 5, which was never defined.",
+   "msg": "dangling"
+  },
+  {
+   "path": "index-defined-twice.ndjson",
+   "expect": "reject",
+   "why": "name 1 is defined twice.",
+   "msg": "defined twice"
+  },
+  {
+   "path": "quot-without-eq.ndjson",
+   "expect": "reject",
+   "why": "Quot declared in a file with no Eq: the quotient rules are stated through Eq.",
+   "msg": "quotient: Eq is not declared"
+  },
+  {
+   "path": "quot-unexpected-name.ndjson",
+   "expect": "reject",
+   "why": "a quotient declaration named Foo: only Quot, Quot.mk, Quot.lift and Quot.ind exist.",
+   "msg": "quotient: unexpected name"
+  },
+  {
+   "path": "quot-wrong-universes.ndjson",
+   "expect": "reject",
+   "why": "Quot declared with two universe parameters instead of one.",
+   "msg": "quotient: wrong universe parameters"
+  },
+  {
+   "path": "quot-wrong-type.ndjson",
+   "expect": "reject",
+   "why": "Quot declared with type Type instead of {a : Sort u} -> (a -> a -> Prop) -> Sort u.",
+   "msg": "quotient: the type of Quot is not the expected one"
+  },
+  {
+   "path": "quot-eq-wrong-shape.ndjson",
+   "expect": "reject",
+   "why": "Eq is an inductive family with one constructor, but a one-universe PUnit in disguise: no parameters, no index. The quotient rules need the real Eq.",
+   "msg": "quotient: Eq is not the expected inductive family"
+  },
+  {
+   "path": "literal-without-genuine-nat.ndjson",
+   "expect": "reject",
+   "why": "a natural number literal in a file whose Nat is an axiom, not the inductive type.",
+   "msg": "natural number literal: the environment's Nat is not the genuine one"
+  },
+  {
+   "path": "string-literal-without-string.ndjson",
+   "expect": "reject",
+   "why": "a string literal in a file with no String.",
+   "msg": "String literal without String"
+  },
+  {
+   "path": "wrong-number-of-levels.ndjson",
+   "expect": "reject",
+   "why": "a.{u} used with no universe level.",
+   "msg": "wrong number of universe levels for a"
+  },
+  {
+   "path": "function-expected.ndjson",
+   "expect": "reject",
+   "why": "Nat.zero applied to an argument: it is not a function.",
+   "msg": "function expected"
+  },
+  {
+   "path": "opaque-wrong-type.ndjson",
+   "expect": "reject",
+   "why": "an opaque constant of type Nat whose value is Bool.true.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nested-parameter-with-local.ndjson",
+   "expect": "reject",
+   "why": "T := mk (x : Nat) (PProd T (x = x)): T occurs inside PProd, whose other argument mentions the field x. A nested occurrence's parameters may not contain local variables.",
+   "msg": "invalid nested inductive datatype"
+  },
+  {
+   "path": "claim-ctor-index.ndjson",
+   "expect": "reject",
+   "why": "inductive T := mk (n : Nat) with one claim about the block changed: constructor mk has index 1 though it is the first. Every such claim is derived from the types and constructors and compared; none is trusted.",
+   "msg": "constructor T.mk has the wrong index"
+  },
+  {
+   "path": "claim-ctor-undeclared.ndjson",
+   "expect": "reject",
+   "why": "inductive T := mk (n : Nat) with one claim about the block changed: the type lists mk but no constructor declaration is given. Every such claim is derived from the types and constructors and compared; none is trusted.",
+   "msg": "constructor T.mk is listed but not declared"
+  },
+  {
+   "path": "claim-recursor-missing.ndjson",
+   "expect": "reject",
+   "why": "inductive T := mk (n : Nat) with one claim about the block changed: no recursor is given. Every such claim is derived from the types and constructors and compared; none is trusted.",
+   "msg": "recursor T.rec is derived but missing from the file"
+  },
+  {
+   "path": "claim-ctor-under-another-type.ndjson",
+   "expect": "reject",
+   "why": "the type A lists B.mk as its constructor but B.mk is declared as a constructor of B.",
+   "msg": "constructor B.mk is listed under another type"
+  },
+  {
+   "path": "constructor-too-few-parameters.ndjson",
+   "expect": "reject",
+   "why": "T takes one parameter but the type of T.mk has no binder for it.",
+   "msg": "constructor T.mk: too few parameters"
   },
   {
    "path": "mutual-different-parameters.ndjson",

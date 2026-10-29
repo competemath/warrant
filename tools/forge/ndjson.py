@@ -211,6 +211,33 @@ class Builder:
             }
         )
 
+    def opaque(self, name, lparams, ty, val):
+        self._emit(
+            {
+                "opaque": {
+                    "name": self.name(name),
+                    "levelParams": self.lparams(lparams),
+                    "type": self.expr(ty),
+                    "value": self.expr(val),
+                    "isUnsafe": False,
+                    "all": [self.name(name)],
+                }
+            }
+        )
+
+    def quot(self, kind, name, lparams, ty):
+        """A quotient declaration; kind is one of type, ctor, lift, ind."""
+        self._emit(
+            {
+                "quot": {
+                    "kind": kind,
+                    "name": self.name(name),
+                    "levelParams": self.lparams(lparams),
+                    "type": self.expr(ty),
+                }
+            }
+        )
+
     def inductive(self, types, ctors=(), recs=()):
         """An inductive block. [types]: dicts with name, type, num_params, num_indices (optional: lparams, ctors, is_rec,
         num_nested); [ctors]: dicts with name, induct, type, num_params, num_fields, cidx; [recs] as in the export:
@@ -225,7 +252,7 @@ class Builder:
                             "name": self.name(t["name"]),
                             "levelParams": self.lparams(t.get("lparams", [])),
                             "type": self.expr(t["type"]),
-                            "all": [self.name(x) for x in names],
+                            "all": [self.name(x) for x in t.get("all", names)],
                             "ctors": [self.name(x) for x in t.get("ctors", [])],
                             "numParams": t["num_params"],
                             "numIndices": t.get("num_indices", 0),
@@ -254,7 +281,7 @@ class Builder:
                             "name": self.name(r["name"]),
                             "levelParams": self.lparams(r.get("lparams", [])),
                             "type": self.expr(r["type"]),
-                            "all": [self.name(x) for x in names],
+                            "all": [self.name(x) for x in r.get("all", names)],
                             "numParams": r["num_params"],
                             "numIndices": r.get("num_indices", 0),
                             "numMotives": r["num_motives"],
