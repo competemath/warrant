@@ -2642,6 +2642,27 @@ add(
     msg="invalid occurrence",
 )
 
+# a type with two constructors has no structure eta: the recursor on a stuck major premise stays stuck
+b = base("Bool", "Bool.rec", "Nat", "Eq", "Eq.refl")
+b.axiom("bb", [], ("const", "Bool", []))
+rec_bool = _app(
+    ("const", "Bool.rec", [ONE]), ("lam", ("const", "Bool", []), NAT), ("nat", 5), ("nat", 6), ("const", "bb", [])
+)
+b.theorem(
+    "t",
+    [],
+    _app(("const", "Eq", [ONE]), NAT, rec_bool, ("nat", 5)),
+    _app(("const", "Eq.refl", [ONE]), NAT, ("nat", 5)),
+)
+add(
+    "two-constructors-no-eta-in-recursor.ndjson",
+    b.text(),
+    "reject",
+    "Bool.rec 5 6 b for an axiom b : Bool is stuck: Bool has two constructors, so b is not replaced by one of them (the official "
+    "kernel's behaviour; a second check inside the expansion also refuses it, so this pins the behaviour, not one line).",
+    msg="the value does not have the declared type",
+)
+
 # the checker's own work budget and its caches
 b = Builder.extending(prims)
 b.axiom("T", [], ("pi", NAT, ("sort", ONE)))
