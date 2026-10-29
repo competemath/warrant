@@ -2965,6 +2965,19 @@ for name, claimed, expect, why in [
         msg=DEFEQ_MSG if expect == "reject" else None,
     )
 
+# the value of a let must have the let's type, even when the body does not use it
+BOOLT = ("const", "Bool", [])
+b = base("Nat", "Bool", "Bool.true")
+b.definition("d", [], NAT, ("let", NAT, ("const", "Bool.true", []), ("nat", 5)))
+add(
+    "let-value-of-the-wrong-type-unused.ndjson",
+    b.text(),
+    "reject",
+    "d : Nat := let x : Nat := true in 5: the value is a Bool, the body never uses x, so no other check sees it (found by mutation "
+    "testing: the check could be dropped unnoticed).",
+    msg="let value has the wrong type",
+)
+
 # the checker's own work budget and its caches
 b = Builder.extending(prims)
 b.axiom("T", [], ("pi", NAT, ("sort", ONE)))

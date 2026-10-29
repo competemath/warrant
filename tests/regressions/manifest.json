@@ -1506,6 +1506,12 @@
    "msg": "the value does not have the declared type"
   },
   {
+   "path": "let-value-of-the-wrong-type-unused.ndjson",
+   "expect": "reject",
+   "why": "d : Nat := let x : Nat := true in 5: the value is a Bool, the body never uses x, so no other check sees it (found by mutation testing: the check could be dropped unnoticed).",
+   "msg": "let value has the wrong type"
+  },
+  {
    "path": "work-budget-exhausted.ndjson",
    "expect": "decline",
    "why": "the same file as nat-log2-literal, run with a work budget of 10 steps (WARRANT_FUEL): the checker declines and says why. With its normal budget (400 million steps) the file is accepted. A budget can turn an accept into a decline, never a decline into an accept.",
