@@ -643,6 +643,91 @@
    "msg": "too large"
   },
   {
+   "path": "nat-few-steps-land-5408.ndjson",
+   "expect": "accept",
+   "why": "Nat.land on operands of about 113 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
+   "env": {
+    "WARRANT_FUEL": "5000"
+   }
+  },
+  {
+   "path": "nat-few-steps-land-5409.ndjson",
+   "expect": "reject",
+   "why": "Nat.land on operands of about 113 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
+   "msg": "the value does not have the declared type",
+   "env": {
+    "WARRANT_FUEL": "5000"
+   }
+  },
+  {
+   "path": "nat-few-steps-lor-1037.ndjson",
+   "expect": "accept",
+   "why": "Nat.lor on operands of about 113 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
+   "env": {
+    "WARRANT_FUEL": "5000"
+   }
+  },
+  {
+   "path": "nat-few-steps-lor-1038.ndjson",
+   "expect": "reject",
+   "why": "Nat.lor on operands of about 113 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
+   "msg": "the value does not have the declared type",
+   "env": {
+    "WARRANT_FUEL": "5000"
+   }
+  },
+  {
+   "path": "nat-few-steps-xor-5629.ndjson",
+   "expect": "accept",
+   "why": "Nat.xor on operands of about 113 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
+   "env": {
+    "WARRANT_FUEL": "5000"
+   }
+  },
+  {
+   "path": "nat-few-steps-xor-5630.ndjson",
+   "expect": "reject",
+   "why": "Nat.xor on operands of about 113 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
+   "msg": "the value does not have the declared type",
+   "env": {
+    "WARRANT_FUEL": "5000"
+   }
+  },
+  {
+   "path": "nat-few-steps-gcd-1.ndjson",
+   "expect": "accept",
+   "why": "Nat.gcd on operands of about 277 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
+   "env": {
+    "WARRANT_FUEL": "5000"
+   }
+  },
+  {
+   "path": "nat-few-steps-gcd-2.ndjson",
+   "expect": "reject",
+   "why": "Nat.gcd on operands of about 277 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
+   "msg": "the value does not have the declared type",
+   "env": {
+    "WARRANT_FUEL": "5000"
+   }
+  },
+  {
+   "path": "nat-few-steps-div-7785.ndjson",
+   "expect": "accept",
+   "why": "Nat.div on operands of about 212 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
+   "env": {
+    "WARRANT_FUEL": "5000"
+   }
+  },
+  {
+   "path": "nat-few-steps-div-7786.ndjson",
+   "expect": "reject",
+   "why": "Nat.div on operands of about 212 bits, with a work budget of 5000 steps: only the shortcut for the operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, the unfolding still decided the default-budget version of this claim).",
+   "msg": "the value does not have the declared type",
+   "env": {
+    "WARRANT_FUEL": "5000"
+   }
+  },
+  {
    "path": "nat-small-limits-pow-exponent-at-limit.ndjson",
    "expect": "accept",
    "why": "1^10 with the exponent limit 10. A result past a limit is declined (found by mutation testing: nothing tested the size clauses of shiftLeft, nor that Nat.mul has one).",
@@ -1373,6 +1458,41 @@
    "expect": "reject",
    "why": "T lists the constructor T.mk, and the block declares a second constructor T.other that no type lists (found by mutation testing: every constructor the types list was checked, not the other way round).",
    "msg": "belongs to no type of its block"
+  },
+  {
+   "path": "projection-of-a-proof-into-a-proof.ndjson",
+   "expect": "accept",
+   "why": "h : P /\\ Q; (h.1 : P) is a proof taken from a proof. A mutation that refused every projection from a proposition refused it (found by mutation testing)."
+  },
+  {
+   "path": "projection-of-a-proof-into-data.ndjson",
+   "expect": "reject",
+   "why": "hn : Nonempty Nat; (hn.1 : Nat) would take an element, which is data, out of a proof: the structure is a proposition, the field is not.",
+   "msg": "projection of a proof into a non-proposition"
+  },
+  {
+   "path": "parse-empty-natural-literal.ndjson",
+   "expect": "decline",
+   "why": "natVal \"\" has no digits.",
+   "msg": "bad natural literal"
+  },
+  {
+   "path": "quot-lift-without-quot-type.ndjson",
+   "expect": "reject",
+   "why": "Quot.lift declared without Quot (found by mutation testing: the check was only ever run for Quot.mk).",
+   "msg": "Quot.lift needs Quot"
+  },
+  {
+   "path": "quot-ind-without-quot-type.ndjson",
+   "expect": "reject",
+   "why": "Quot.ind declared without Quot (found by mutation testing: the check was only ever run for Quot.mk).",
+   "msg": "Quot.ind needs Quot"
+  },
+  {
+   "path": "projection-of-a-later-field-through-data.ndjson",
+   "expect": "reject",
+   "why": "he : MyEx p0 where MyEx p := intro (w : Nat) (h : p w) is a proposition; he.2 : p0 he.1 would use he.1, a natural number taken out of a proof, in its type (found by mutation testing: only the last field was ever projected from a proposition).",
+   "msg": "projection of a proof into a non-proposition"
   },
   {
    "path": "work-budget-exhausted.ndjson",

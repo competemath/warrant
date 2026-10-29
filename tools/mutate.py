@@ -133,9 +133,10 @@ def run_stages(work, args):
     binary = work / "_build/default/bin/main.exe"
     ft = args.file_timeout
     arena = f"python3 tools/arena.py --binary {binary} --timeout {ft} --jobs {args.jobs} --quiet --fail-fast"
+    only_tests = "".join(f"--filter {t} " for t in (args.only_tests or []))
     stages = [
         ("bad", f"{arena} --filter bad/ --filter bugs/ tests/arena"),
-        ("regressions", f"{arena} tests/regressions"),
+        ("regressions", f"{arena} {only_tests}tests/regressions"),
     ]
     if not args.fast:
         stages.append(("arena", f"{arena} --exclude good/perf/ tests/arena"))
@@ -196,6 +197,12 @@ def main():
         "--stages",
         default=None,
         help="only these stages (bad,regressions,arena,forge,unit; comma-separated): to try survivors of an earlier run against new tests",
+    )
+    ap.add_argument(
+        "--only-tests",
+        action="append",
+        default=None,
+        help="the regressions stage runs only the files whose path contains this (repeatable): survivors against new tests",
     )
     ap.add_argument("--no-baseline", action="store_true", help="skip the run of the tests on the unmutated tree")
     ap.add_argument("--jobs", type=int, default=4, help="files run side by side in each stage")

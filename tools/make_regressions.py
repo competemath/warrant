@@ -1314,6 +1314,33 @@ for name, term, claimed, expect, why in [
         msg="too large" if expect == "decline" else None,
     )
 
+# Operations whose unfolding is possible but costly are told apart from the shortcut by a small work budget (WARRANT_FUEL=5000):
+# the shortcut needs a handful of steps, the definition hundreds or thousands.
+FEW = {"WARRANT_FUEL": "5000"}
+BIG = 10**30 + 12345
+BIG2 = 7**40 + 99
+fib = [0, 1]
+for _ in range(400):
+    fib.append(fib[-1] + fib[-2])
+for op, x, y, res in [
+    ("Nat.land", BIG, BIG2, BIG & BIG2),
+    ("Nat.lor", BIG, BIG2, BIG | BIG2),
+    ("Nat.xor", BIG, BIG2, BIG ^ BIG2),
+    ("Nat.gcd", fib[400], fib[399], 1),
+    ("Nat.div", BIG * BIG2, 7, (BIG * BIG2) // 7),
+]:
+    for claimed, expect in [(res, "accept"), (res + 1, "reject")]:
+        nat_def(
+            f"nat-few-steps-{op.split('.')[1].lower()}-{claimed % 10000}",
+            N(op, x, y),
+            claimed,
+            expect,
+            f"{op} on operands of about {max(x, y).bit_length()} bits, with a work budget of 5000 steps: only the shortcut for the "
+            "operation fits the budget (found by mutation testing: with the operation's name changed, so that no shortcut applied, "
+            "the unfolding still decided the default-budget version of this claim).",
+            env=FEW,
+        )
+
 # The same limits at small values (WARRANT_MAX_POW=10, WARRANT_MAX_BITS=100), at the edge and one past it: every clause of the
 # limits is pinned without a computation of millions of bits.
 SMALL = {"WARRANT_MAX_POW": "10", "WARRANT_MAX_BITS": "100"}
@@ -1833,11 +1860,13 @@ add(
 
 
 # each quotient declaration needs the ones it mentions: the declaration of the needed one is removed from a real cut
-def without_quot(target, kind_removed):
+def without_quot(target, kinds_removed):
+    if isinstance(kinds_removed, str):
+        kinds_removed = [kinds_removed]
     with open(PRELUDE_PATH, encoding="utf-8") as f:
         cut = slice_lines(f, [target, "Eq", "Eq.refl"])
-    kept = [ln for ln in cut if not ('"quot"' in ln and json.loads(ln)["quot"]["kind"] == kind_removed)]
-    assert len(kept) == len(cut) - 1, (target, kind_removed)
+    kept = [ln for ln in cut if not ('"quot"' in ln and json.loads(ln)["quot"]["kind"] in kinds_removed)]
+    assert len(kept) == len(cut) - len(kinds_removed), (target, kinds_removed)
     return "\n".join(kept) + "\n"
 
 
@@ -2015,16 +2044,17 @@ add(
 
 # A nested occurrence in a container that has an index: Vec (a : Type) : Nat -> Type, and T := mk (Vec T 0). The container's
 # recursor and the nested type's two recursors are written as the checker derives them.
+VEC_NIL, VEC_CONS = "Vec.nil", "Vec.cons"
 W = ("param", "w")
 TYPE_W = ("sort", ("succ", W))
 NZERO = ("const", "Nat.zero", [])
 nsucc = lambda n: _app(("const", "Nat.succ", []), n)  # noqa: E731
 vec_w = lambda *a: _app(("const", "Vec", [W]), *a)  # noqa: E731
-vec_nil_w = lambda a: _app(("const", "Vec.nil", [W]), a)  # noqa: E731
-vec_cons_w = lambda *a: _app(("const", "Vec.cons", [W]), *a)  # noqa: E731
+vec_nil_w = lambda a: _app(("const", VEC_NIL, [W]), a)  # noqa: E731
+vec_cons_w = lambda *a: _app(("const", VEC_CONS, [W]), *a)  # noqa: E731
 vec_0 = lambda *a: _app(("const", "Vec", [0]), *a)  # noqa: E731
-vec_nil_0 = lambda a: _app(("const", "Vec.nil", [0]), a)  # noqa: E731
-vec_cons_0 = lambda *a: _app(("const", "Vec.cons", [0]), *a)  # noqa: E731
+vec_nil_0 = lambda a: _app(("const", VEC_NIL, [0]), a)  # noqa: E731
+vec_cons_0 = lambda *a: _app(("const", VEC_CONS, [0]), *a)  # noqa: E731
 
 
 def build_vec_nested(b, break_rule=None):
@@ -2046,13 +2076,13 @@ def build_vec_nested(b, break_rule=None):
                 "type": db(tele("pin", [("A", TYPE_W), ("n", NAT)], TYPE_W), []),
                 "num_params": 1,
                 "num_indices": 1,
-                "ctors": ["Vec.nil", "Vec.cons"],
+                "ctors": [VEC_NIL, VEC_CONS],
                 "is_rec": True,
             }
         ],
         [
             {
-                "name": "Vec.nil",
+                "name": VEC_NIL,
                 "induct": "Vec",
                 "lparams": ["w"],
                 "type": db(tele("pin", [("A", TYPE_W)], vec_w(V("A"), NZERO)), []),
@@ -2061,7 +2091,7 @@ def build_vec_nested(b, break_rule=None):
                 "num_fields": 0,
             },
             {
-                "name": "Vec.cons",
+                "name": VEC_CONS,
                 "induct": "Vec",
                 "lparams": ["w"],
                 "type": db(
@@ -2087,9 +2117,9 @@ def build_vec_nested(b, break_rule=None):
                 "num_motives": 1,
                 "num_minors": 2,
                 "rules": [
-                    ("Vec.nil", 0, db(tele("lamn", vec_head, V("nl")), [])),
+                    (VEC_NIL, 0, db(tele("lamn", vec_head, V("nl")), [])),
                     (
-                        "Vec.cons",
+                        VEC_CONS,
                         3,
                         db(
                             tele(
@@ -2157,7 +2187,7 @@ def build_vec_nested(b, break_rule=None):
             "num_indices": 1,
             "num_motives": 2,
             "num_minors": 3,
-            "rules": [("Vec.nil", 0, db(rule_nil, [])), ("Vec.cons", 3, db(rule_cons, []))],
+            "rules": [(VEC_NIL, 0, db(rule_nil, [])), (VEC_CONS, 3, db(rule_cons, []))],
         },
     ]
     if break_rule:
@@ -2189,6 +2219,7 @@ add(
     "T. Found by mutation testing: nothing else nested through a container with indices, so the split of the container's "
     "arguments into parameters and indices could be changed unnoticed.",
 )
+
 
 # a mutual block of two propositions, one with a constructor without fields and one empty: no K, small elimination
 A_A = ("const", "A.a", [])
@@ -2784,6 +2815,120 @@ add(
     "T lists the constructor T.mk, and the block declares a second constructor T.other that no type lists (found by mutation "
     "testing: every constructor the types list was checked, not the other way round).",
     msg="belongs to no type of its block",
+)
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Mutation round 3n
+
+# a projection of a proof is allowed when the field is a proof, and not when it is data
+b = base("And", "And.intro")
+b.axiom("P", [], PROP)
+b.axiom("Q", [], PROP)
+and_pq2 = _app(("const", "And", []), ("const", "P", []), ("const", "Q", []))
+b.axiom("h", [], and_pq2)
+b.theorem("t", [], ("const", "P", []), ("proj", "And", 0, ("const", "h", [])))
+add(
+    "projection-of-a-proof-into-a-proof.ndjson",
+    b.text(),
+    "accept",
+    "h : P /\\ Q; (h.1 : P) is a proof taken from a proof. A mutation that refused every projection from a proposition refused it "
+    "(found by mutation testing).",
+)
+b = base("Nonempty", "Nonempty.intro", "Nat")
+ne_nat = _app(("const", "Nonempty", [ONE]), NAT)
+b.axiom("hn", [], ne_nat)
+b.definition("w", [], NAT, ("proj", "Nonempty", 0, ("const", "hn", [])))
+add(
+    "projection-of-a-proof-into-data.ndjson",
+    b.text(),
+    "reject",
+    "hn : Nonempty Nat; (hn.1 : Nat) would take an element, which is data, out of a proof: the structure is a proposition, the "
+    "field is not.",
+    msg="projection of a proof into a non-proposition",
+)
+
+# an empty natural number literal
+add(
+    "parse-empty-natural-literal.ndjson",
+    head + '\n{"ie":0,"natVal":""}\n',
+    "decline",
+    'natVal "" has no digits.',
+    msg="bad natural literal",
+)
+
+# Quot.lift and Quot.ind need Quot itself
+for target, removed, needs in [
+    ("Quot.lift", "type", "Quot.lift needs Quot"),
+    ("Quot.ind", ["type", "ctor"], "Quot.ind needs Quot"),
+]:
+    add(
+        f"quot-{target.split('.')[1]}-without-quot-type.ndjson",
+        without_quot(target, removed),
+        "reject",
+        f"{target} declared without Quot (found by mutation testing: the check was only ever run for Quot.mk).",
+        msg=needs,
+    )
+
+# a dependent proposition: MyEx (p : Nat -> Prop) : Prop := intro (w : Nat) (h : p w). The second field cannot be projected out of
+# a proof, because its type mentions the first, which is data
+b = base("Nat")
+PRED = ("pi", NAT, PROP)
+MYEX = lambda pr: _app(("const", "MyEx", []), pr)  # noqa: E731
+intro_ty = tele("pin", [("p", PRED), ("w", NAT), ("h", _app(V("p"), V("w")))], MYEX(V("p")))
+mx_motive = tele("pin", [("t", MYEX(V("p")))], PROP)
+mx_minor = tele(
+    "pin",
+    [("w", NAT), ("h", _app(V("p"), V("w")))],
+    _app(V("m"), _app(("const", "MyEx.intro", []), V("p"), V("w"), V("h"))),
+)
+mx_head = [("p", PRED), ("m", mx_motive), ("i", mx_minor)]
+b.inductive(
+    [{"name": "MyEx", "type": db(tele("pin", [("p", PRED)], PROP), []), "num_params": 1, "ctors": ["MyEx.intro"]}],
+    [
+        {
+            "name": "MyEx.intro",
+            "induct": "MyEx",
+            "type": db(intro_ty, []),
+            "cidx": 0,
+            "num_params": 1,
+            "num_fields": 2,
+        }
+    ],
+    [
+        {
+            "name": "MyEx.rec",
+            "type": db(tele("pin", mx_head + [("t", MYEX(V("p")))], _app(V("m"), V("t"))), []),
+            "num_params": 1,
+            "num_motives": 1,
+            "num_minors": 1,
+            "rules": [
+                (
+                    "MyEx.intro",
+                    2,
+                    db(
+                        tele("lamn", mx_head + [("w", NAT), ("h", _app(V("p"), V("w")))], _app(V("i"), V("w"), V("h"))),
+                        [],
+                    ),
+                )
+            ],
+        }
+    ],
+)
+b.axiom("p0", [], PRED)
+b.axiom("he", [], MYEX(("const", "p0", [])))
+b.theorem(
+    "t",
+    [],
+    _app(("const", "p0", []), ("proj", "MyEx", 0, ("const", "he", []))),
+    ("proj", "MyEx", 1, ("const", "he", [])),
+)
+add(
+    "projection-of-a-later-field-through-data.ndjson",
+    b.text(),
+    "reject",
+    "he : MyEx p0 where MyEx p := intro (w : Nat) (h : p w) is a proposition; he.2 : p0 he.1 would use he.1, a natural number "
+    "taken out of a proof, in its type (found by mutation testing: only the last field was ever projected from a proposition).",
+    msg="projection of a proof into a non-proposition",
 )
 
 # the checker's own work budget and its caches
