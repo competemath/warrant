@@ -68,12 +68,17 @@ def main():
     ap.add_argument("--timeout", type=int, default=120)
     ap.add_argument("--jobs", type=int, default=os.cpu_count() or 1)
     ap.add_argument("--quiet", action="store_true")
+    ap.add_argument(
+        "--filter", action="append", default=[], help="only the entries whose path contains this (repeatable)"
+    )
     ap.add_argument("dirs", nargs="+")
     args = ap.parse_args()
     results = []
     for root in args.dirs:
         with open(os.path.join(root, "manifest.json"), encoding="utf-8") as f:
             entries = json.load(f)["files"]
+        if args.filter:
+            entries = [e for e in entries if any(x in e["path"] for x in args.filter)]
         with ThreadPoolExecutor(max_workers=args.jobs) as pool:
             results += list(pool.map(lambda e, r=root: run_one(args.binary, r, e, args.timeout), entries))
     bad = [r for r in results if not r["ok"]]
