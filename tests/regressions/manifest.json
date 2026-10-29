@@ -972,6 +972,11 @@
    "msg": "duplicate key"
   },
   {
+   "path": "failure-cache-is-not-a-verdict.ndjson",
+   "expect": "accept",
+   "why": "f := fun _ => 0: f 1 = f 2 holds. t1 asks it under a beta redex (the arguments differ, then the unfoldings agree), t2 asks it directly afterwards. The checker once refused t2."
+  },
+  {
    "path": "work-budget-exhausted.ndjson",
    "expect": "decline",
    "why": "the same file as nat-log2-literal, run with a work budget of 10 steps (WARRANT_FUEL): the checker declines and says why. With its normal budget (400 million steps) the file is accepted. A budget can turn an accept into a decline, never a decline into an accept.",

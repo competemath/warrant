@@ -83,6 +83,10 @@ type caches = {
   whnf : E.t cache;
   eq_ok : (int * int, unit) Hashtbl.t;
   eq_fail : (int * int, unit) Hashtbl.t;
+  args_fail : (int * int, unit) Hashtbl.t;
+      (** pairs of applications of one function whose arguments were found different: that attempt
+          failed, which says nothing about the pairs themselves (they may agree after unfolding), so
+          it is not [eq_fail] *)
 }
 
 let new_caches () =
@@ -92,6 +96,7 @@ let new_caches () =
     whnf = new_cache ();
     eq_ok = Hashtbl.create 4096;
     eq_fail = Hashtbl.create 4096;
+    args_fail = Hashtbl.create 4096;
   }
 
 (* Caches hold results about terms of one environment; an environment only grows, so entries stay valid. An overlay
@@ -918,7 +923,7 @@ and lazy_delta_step st tn sn =
                         match hints_of d1 with
                         | Decl.Regular _ ->
                             let key = if tn.id <= sn.id then (tn.id, sn.id) else (sn.id, tn.id) in
-                            if Hashtbl.mem st.c.eq_fail key then false
+                            if Hashtbl.mem st.c.args_fail key then false
                             else begin
                               let ls1 =
                                 match (E.get_app_fn tn).node with E.Const (_, l) -> l | _ -> []
@@ -929,7 +934,7 @@ and lazy_delta_step st tn sn =
                               if is_def_eq_levels ls1 ls2 && is_def_eq_args st tn sn then true
                               else begin
                                 if not (tn.has_fvar || sn.has_fvar) then
-                                  Hashtbl.replace st.c.eq_fail key ();
+                                  Hashtbl.replace st.c.args_fail key ();
                                 false
                               end
                             end
@@ -1081,14 +1086,15 @@ let end_decl () =
       let size =
         Hashtbl.length c.infer_only.global
         + Hashtbl.length c.whnf_core.global + Hashtbl.length c.whnf.global + Hashtbl.length c.eq_ok
-        + Hashtbl.length c.eq_fail
+        + Hashtbl.length c.eq_fail + Hashtbl.length c.args_fail
       in
       if size > cache_limit then begin
         Hashtbl.reset c.infer_only.global;
         Hashtbl.reset c.whnf_core.global;
         Hashtbl.reset c.whnf.global;
         Hashtbl.reset c.eq_ok;
-        Hashtbl.reset c.eq_fail
+        Hashtbl.reset c.eq_fail;
+        Hashtbl.reset c.args_fail
       end)
     cache_tbl;
   if Hashtbl.length Fingerprint.memo > 1_000_000 then Hashtbl.reset Fingerprint.memo

@@ -2148,6 +2148,27 @@ add(
     msg="duplicate key",
 )
 
+# The failure of the same-arguments attempt of the lazy delta step is not a verdict about the pair. f 1 and f 2 (f := fun _ => 0)
+# are tried once under a beta redex, found different in their arguments, and then agree after unfolding; asked directly later they
+# must still agree. The attempt's failures were once recorded where is_def_eq looks for definite failures, and the later, direct
+# question was answered "different": a valid file was refused (found by mutation testing: the role of that cache could not be
+# pinned down by any test; a hand-made file then showed it).
+b = base("Nat", "Eq", "Eq.refl")
+b.definition("f", [], ("pi", NAT, NAT), ("lam", NAT, ("nat", 0)), hints="regular")
+q = lambda x, y: _app(("const", "Eq", [ONE]), NAT, x, y)  # noqa: E731
+r = lambda x: _app(("const", "Eq.refl", [ONE]), NAT, x)  # noqa: E731
+redex = lambda n: _app(("lam", NAT, _app(("const", "f", []), ("bvar", 0))), ("nat", n))  # noqa: E731
+f1, f2 = _app(("const", "f", []), ("nat", 1)), _app(("const", "f", []), ("nat", 2))
+b.theorem("t1", [], q(redex(1), redex(2)), r(redex(1)))
+b.theorem("t2", [], q(f1, f2), r(f1))
+add(
+    "failure-cache-is-not-a-verdict.ndjson",
+    b.text(),
+    "accept",
+    "f := fun _ => 0: f 1 = f 2 holds. t1 asks it under a beta redex (the arguments differ, then the unfoldings agree), t2 asks "
+    "it directly afterwards. The checker once refused t2.",
+)
+
 # the checker's own work budget and its caches
 b = Builder.extending(prims)
 b.axiom("T", [], ("pi", NAT, ("sort", ONE)))
