@@ -3145,6 +3145,12 @@ for fname, meta, lines, msg_ in [
         "",
     ),
     (
+        "mdata-with-an-extra-field",
+        None,
+        [n1, lv, '{"ie":2,"mdata":{"data":[],"expr":0,"x":1}}'],
+        "mdata: the fields must be expr and data",
+    ),
+    (
         "name-entry-with-an-extra-field",
         None,
         ['{"in":1,"str":{"extra":1,"pre":0,"str":"x"}}'],

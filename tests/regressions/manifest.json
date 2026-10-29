@@ -1605,6 +1605,12 @@
    "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through."
   },
   {
+   "path": "strict-mdata-with-an-extra-field.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "mdata: the fields must be expr and data"
+  },
+  {
    "path": "strict-name-entry-with-an-extra-field.ndjson",
    "expect": "decline",
    "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
