@@ -14,11 +14,13 @@ _build/default/bin/main.exe file.ndjson     # exit 0 accepted, 1 rejected, 2 dec
 | What | How | Gate |
 |---|---|---|
 | Lean Kernel Arena files (soundness bugs, tutorial, perf) and the regressions | `python3 tools/arena.py --binary _build/default/bin/main.exe tests/arena tests/regressions` | CI |
-| Every refusal the checker can make is reached by a test (or listed as unreachable, with the reason) | `python3 tools/reject_coverage.py --binary ... --allow tools/reject_unreachable.json tests/arena tests/regressions` | CI |
+| Every refusal and every decline the checker can make is reached by a test (or listed as unreachable, with the reason) | `python3 tools/reject_coverage.py --binary ... --allow tools/reject_unreachable.json tests/arena tests/regressions` | CI |
 | Universe levels against brute force, terms, primitives (digest table against the official exports) | `dune test` | CI |
 | The evidence discipline | `python3 tools/lint_kernel.py`, `python3 tools/compile_fail.py` | CI |
 | Random files with known verdicts, in rounds of growing size | `python3 tools/forge/forge.py --binary ...` | weekly, and short in CI |
-| The tests themselves: change one operator in the source, see whether anything fails | `python3 tools/mutate.py --work DIR ...` | weekly (`tools/mutation_equivalents.json` lists the changes that cannot matter, with the reason) |
+| The tests themselves: change the source in one small way, see whether anything fails. `--mode text` swaps an operator; `--mode ast` (tools/astsites) fixes a condition to true/false, swaps the branches of an `if`, drops one side of `&&`/`||`, deletes a statement, swaps arguments, moves a number by one, replaces a constructor or record field by a sibling of the same type, changes a string constant, replaces a match arm's result by its neighbour's | `python3 tools/mutate.py --work DIR ...` | weekly (`tools/mutation_equivalents.json` lists the changes that cannot matter, with the reason) |
+| The same file written differently keeps its verdict: every index renumbered, keys of every object reordered, CRLF line ends | `python3 tools/metamorphic.py --binary ... tests/arena tests/regressions` | CI |
+| The caches emptied after every declaration give the same verdicts; every term hashing alike (hash-consing decided by the equality tests alone) | `arena.py --env WARRANT_CACHE_LIMIT=0 ...`, `dune test` (test/test_collide.ml runs with `WARRANT_HASH_MASK=0`) | CI |
 | A second checker (nanoda, pinned) on the same files | `python3 tools/differential.py --binary ... --other 'CMD < {file}' ...` | weekly (`tools/differential_known.json` lists the understood differences) |
 
 `tools/slice.py` cuts the closure of named declarations out of a large export (a 347 MB Init export becomes a 1 MB file

@@ -47,6 +47,9 @@ jobs:
       - name: Same verdicts with the caches emptied after every declaration
         # the caches only save work: a run that empties them all the time must agree with the manifests (WARRANT_CACHE_LIMIT=0)
         run: python3 tools/arena.py --binary _build/default/bin/main.exe --timeout 120 --quiet --env WARRANT_CACHE_LIMIT=0 tests/arena tests/regressions
+      - name: The same files written differently keep their verdict
+        # every index renumbered, the keys of every object reordered, CRLF line ends (tools/metamorphic.py)
+        run: python3 tools/metamorphic.py --binary _build/default/bin/main.exe --jobs 4 tests/arena tests/regressions
       - name: Every refusal the checker can make has a test (or is listed as unreachable, with the reason)
         run: python3 tools/reject_coverage.py --binary _build/default/bin/main.exe --allow tools/reject_unreachable.json tests/arena tests/regressions
       - name: Forge, a short round (random files with verdicts known by construction)

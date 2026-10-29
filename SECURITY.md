@@ -18,6 +18,8 @@ WARRANT is a report by itself.
 
 - **Soundness**: an accepted file in which a theorem's type is `False` or any other uninhabited proposition, or in
   which a declaration is accepted with a type it does not have.
+- **The test-only limits** (`WARRANT_FUEL`, `WARRANT_CACHE_LIMIT`, `WARRANT_HASH_MASK`, read in `src/knobs.ml`): they can
+  only lower a limit. A value that makes the checker accept a file it refuses without them is a soundness bug.
 - **The evidence discipline**: a way to construct an evidence value (`Wf`, `Typing`, `Conv`, `Prop`, `Inductive`)
   outside its minting module, or to carry one across an environment, universe substitution or context it was not
   minted for.
