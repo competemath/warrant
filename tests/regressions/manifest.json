@@ -347,6 +347,64 @@
    "msg": "constructor T.mk: too few parameters"
   },
   {
+   "path": "optparam-axiom-not-stripped.ndjson",
+   "expect": "reject",
+   "why": "optParam is an axiom here, so the field type `optParam Nat ..` is an ordinary type and the recursor's minor premise must take it, not Nat. The annotation is stripped only when the file's definition returns its first argument; a mutation that stripped it by name alone accepted the claimed recursor.",
+   "msg": "the type differs from the derivation"
+  },
+  {
+   "path": "autoparam-axiom-not-stripped.ndjson",
+   "expect": "reject",
+   "why": "autoParam is an axiom here, so the field type `autoParam Nat ..` is an ordinary type and the recursor's minor premise must take it, not Nat. The annotation is stripped only when the file's definition returns its first argument; a mutation that stripped it by name alone accepted the claimed recursor.",
+   "msg": "the type differs from the derivation"
+  },
+  {
+   "path": "semioutparam-axiom-not-stripped.ndjson",
+   "expect": "reject",
+   "why": "semiOutParam is an axiom here, so the field type `semiOutParam Nat ..` is an ordinary type and the recursor's minor premise must take it, not Nat. The annotation is stripped only when the file's definition returns its first argument; a mutation that stripped it by name alone accepted the claimed recursor.",
+   "msg": "the type differs from the derivation"
+  },
+  {
+   "path": "projection-index-boundary.ndjson",
+   "expect": "reject",
+   "why": "the third projection (index 2) of a pair.",
+   "msg": "projection index out of range"
+  },
+  {
+   "path": "nat-log2-literal.ndjson",
+   "expect": "accept",
+   "why": "t : T 9 offered as a T (Nat.log2 1000); log2 1000 is 9. Nat.log2 is defined by well-founded recursion, so only the literal shortcut (gated, like the others, on the genuine definition) decides it; a mutation that turned the shortcut off left the true claim undecided."
+  },
+  {
+   "path": "nat-log2-literal-wrong.ndjson",
+   "expect": "reject",
+   "why": "t : T 10 offered as a T (Nat.log2 1000); log2 1000 is 9. Nat.log2 is defined by well-founded recursion, so only the literal shortcut (gated, like the others, on the genuine definition) decides it; a mutation that turned the shortcut off left the true claim undecided.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "constant-levels-differ-in-last.ndjson",
+   "expect": "reject",
+   "why": "a.{0,2} and a.{0,1} agree in their first level and differ in the second; x : Sort 2 is given a.{0,1} : Sort 1. If terms were identified when only a prefix of the level lists agreed, the second would be read as the first (found by mutation testing).",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "two-pairs-not-equal.ndjson",
+   "expect": "reject",
+   "why": "x y : Nat x Nat are two unknown pairs. Only a structure with no fields has all its elements equal; a mutation that applied that rule to every structure accepted x = y.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "two-units-equal.ndjson",
+   "expect": "accept",
+   "why": "x y : PUnit are equal: a structure with no fields has one element, whatever the terms look like."
+  },
+  {
+   "path": "quot-lift-on-non-mk.ndjson",
+   "expect": "reject",
+   "why": "Quot.lift id h (g 0 0 5) = 5 where g is an unknown function returning quotient elements. Quot.lift reduces only on a Quot.mk; a mutation that accepted any three-argument term as one computed f 5 and accepted the claim.",
+   "msg": "the value does not have the declared type"
+  },
+  {
    "path": "mutual-different-parameters.ndjson",
    "expect": "reject",
    "why": "A and B are declared together but A takes a parameter of type Sort 1 and B one of type Sort 0. All types of a mutual block share their parameters; a mutation that inverted the comparison accepted exactly this.",

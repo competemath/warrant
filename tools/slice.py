@@ -146,8 +146,9 @@ def slice_lines(all_lines, targets):
 
     want = {i for i, n in names.items() if n in targets}
     todo = [by_name[i] for i in want if i in by_name]
-    if not todo:
-        sys.exit("no such declaration")
+    absent = sorted(targets - {names[i] for i in want if i in by_name})
+    if absent:
+        sys.exit("no such declaration: " + ", ".join(absent))
     keep = set()
     while todo:
         i = todo.pop()

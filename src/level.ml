@@ -19,7 +19,6 @@ let max a b = mk (2, a.id, b.id) (Max (a, b))
 let imax a b = mk (3, a.id, b.id) (IMax (a, b))
 let param n = mk (4, n.Name.id, 0) (Param n)
 let one = succ zero
-let equal (a : t) (b : t) = a == b
 let hash a = a.id
 
 let rec to_string l =

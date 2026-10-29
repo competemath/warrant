@@ -230,6 +230,10 @@ def _app(f, *args):
     return f
 
 
+def _refl_any(ty, name="x"):
+    return _app(("const", "Eq.refl", [ONE]), ty, ("const", name, []))
+
+
 def eq_nat(a, b):
     return ("app", ("app", EQ_NAT, a), b)
 
@@ -925,6 +929,119 @@ refuse(
     b.text(),
     "T takes one parameter but the type of T.mk has no binder for it.",
     "constructor T.mk: too few parameters",
+)
+
+# ---- found by the full mutation sweep ----
+# annotations that are not the identity-like definitions are ordinary constants (optParam, autoParam, semiOutParam)
+for ann, arity in [("optParam", 2), ("autoParam", 2), ("semiOutParam", 1)]:
+    b = base("Nat", "Nat.zero")
+    if arity == 2:
+        b.axiom(ann, [], ("pi", ("sort", ONE), ("pi", ("bvar", 0), ("sort", ONE))))
+        field = _app(("const", ann, []), NAT, N_ZERO)
+    else:
+        b.axiom(ann, [], ("pi", ("sort", ONE), ("sort", ONE)))
+        field = _app(("const", ann, []), NAT)
+    one_field_block(b, field, NAT)
+    refuse(
+        f"{ann.lower()}-axiom-not-stripped",
+        b.text(),
+        f"{ann} is an axiom here, so the field type `{ann} Nat ..` is an ordinary type and the recursor's minor premise must "
+        "take it, not Nat. The annotation is stripped only when the file's definition returns its first argument; a mutation "
+        "that stripped it by name alone accepted the claimed recursor.",
+        "the type differs from the derivation",
+    )
+
+# a projection index equal to the number of fields is out of range
+b = base("Nat", "Prod", "Prod.mk")
+prod_nn = _app(("const", "Prod", [0, 0]), NAT, NAT)
+b.axiom("p", [], prod_nn)
+b.definition("d", [], NAT, ("proj", "Prod", 2, ("const", "p", [])))
+refuse(
+    "projection-index-boundary", b.text(), "the third projection (index 2) of a pair.", "projection index out of range"
+)
+
+# Nat.log2 on a literal is computed, not unfolded (the kernel's list of accelerated operations includes it here)
+with open(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tests", "prims", "init-4.34.0-rc2.ndjson"),
+    encoding="utf-8",
+) as f:
+    prims = f.read().splitlines()
+for name, claimed, expect in [("nat-log2-literal", 9, "accept"), ("nat-log2-literal-wrong", 10, "reject")]:
+    b = Builder.extending(prims)
+    b.axiom("T", [], ("pi", NAT, ("sort", ONE)))
+    b.axiom("t", [], _app(("const", "T", []), ("nat", claimed)))
+    b.definition(
+        "d",
+        [],
+        _app(("const", "T", []), _app(("const", "Nat.log2", []), ("nat", 1000))),
+        ("const", "t", []),
+    )
+    add(
+        name + ".ndjson",
+        b.text(),
+        expect,
+        f"t : T {claimed} offered as a T (Nat.log2 1000); log2 1000 is 9. Nat.log2 is defined by well-founded recursion, so "
+        "only the literal shortcut (gated, like the others, on the genuine definition) decides it; a mutation that turned the "
+        "shortcut off left the true claim undecided.",
+        msg="the value does not have the declared type" if expect == "reject" else None,
+    )
+
+# a constant's universe levels are compared as a list, every element
+b = Builder()
+b.axiom("a", ["u", "v"], ("sort", ("max", ("param", "u"), ("param", "v"))))
+TWO = ("succ", ONE)
+b.definition("y", [], ("sort", TWO), ("const", "a", [0, TWO]))
+b.definition("x", [], ("sort", TWO), ("const", "a", [0, ONE]))
+refuse(
+    "constant-levels-differ-in-last",
+    b.text(),
+    "a.{0,2} and a.{0,1} agree in their first level and differ in the second; x : Sort 2 is given a.{0,1} : Sort 1. If terms were "
+    "identified when only a prefix of the level lists agreed, the second would be read as the first (found by mutation testing).",
+    msg="the value does not have the declared type",
+)
+
+# two terms of a structure with fields are not the same term
+b = base("Nat", "Prod", "Prod.mk", "Eq", "Eq.refl")
+b.axiom("x", [], prod_nn)
+b.axiom("y", [], prod_nn)
+b.theorem("t", [], _app(("const", "Eq", [ONE]), prod_nn, ("const", "x", []), ("const", "y", [])), _refl_any(prod_nn))
+add(
+    "two-pairs-not-equal.ndjson",
+    b.text(),
+    "reject",
+    "x y : Nat x Nat are two unknown pairs. Only a structure with no fields has all its elements equal; a mutation that applied "
+    "that rule to every structure accepted x = y.",
+    msg="the value does not have the declared type",
+)
+b = base("PUnit", "PUnit.unit", "Eq", "Eq.refl")
+punit = _app(("const", "PUnit", [ONE]))
+b.axiom("x", [], punit)
+b.axiom("y", [], punit)
+b.theorem("t", [], _app(("const", "Eq", [ONE]), punit, ("const", "x", []), ("const", "y", [])), _refl_any(punit, "x"))
+add(
+    "two-units-equal.ndjson",
+    b.text(),
+    "accept",
+    "x y : PUnit are equal: a structure with no fields has one element, whatever the terms look like.",
+)
+
+# Quot.lift computes only on Quot.mk
+b = base("Nat", "Eq", "Eq.refl", "Quot", "Quot.mk", "Quot.lift")
+rel = ("lam", NAT, ("lam", NAT, _app(("const", "Eq", [ONE]), NAT, ("bvar", 1), ("bvar", 0))))
+quot_nat = _app(("const", "Quot", [ONE]), NAT, rel)
+b.axiom("g", [], ("pi", NAT, ("pi", NAT, ("pi", NAT, quot_nat))))
+f_id = ("lam", NAT, ("bvar", 0))
+h_id = ("lam", NAT, ("lam", NAT, ("lam", _app(rel, ("bvar", 1), ("bvar", 0)), ("bvar", 0))))
+g005 = _app(("const", "g", []), ("nat", 0), ("nat", 0), ("nat", 5))
+lift = _app(("const", "Quot.lift", [ONE, ONE]), NAT, rel, NAT, f_id, h_id, g005)
+b.theorem("t", [], eq_nat(lift, ("nat", 5)), refl_nat(("nat", 5)))
+add(
+    "quot-lift-on-non-mk.ndjson",
+    b.text(),
+    "reject",
+    "Quot.lift id h (g 0 0 5) = 5 where g is an unknown function returning quotient elements. Quot.lift reduces only on a "
+    "Quot.mk; a mutation that accepted any three-argument term as one computed f 5 and accepted the claim.",
+    msg="the value does not have the declared type",
 )
 
 # a mutual block whose types take different parameters

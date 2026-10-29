@@ -89,5 +89,82 @@
   "from": "false",
   "to": "true",
   "why": "OPEN, not understood yet: the failure cache of the lazy delta same-arguments shortcut (the kernel's failed_before). Showing it matters needs two different outer comparisons reaching the same pair after a non-fatal failure; no such test exists"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "if closed_modulo_lets tn && closed_modulo_lets sn then",
+  "from": "&&",
+  "to": "||",
+  "why": "the arithmetic shortcut on one closed side only evaluates that side; it is as sound as on both and no test is slowed or changed by it"
+ },
+ {
+  "file": "src/expr.ml",
+  "context": "let memo_used = ref false in",
+  "from": "false",
+  "to": "true",
+  "why": "performance flag of instantiate's lazy memo"
+ },
+ {
+  "file": "src/expr.ml",
+  "context": "if k = 0 || e.lbr <= n then e",
+  "from": "||",
+  "to": "&&",
+  "why": "early exit of instantiate; the full traversal gives the same term"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "| Decl.Regular a, Decl.Regular b -> if a = b then 0 else if a > b then -1 else 1",
+  "from": ">",
+  "to": ">=",
+  "why": "the equal case is handled by the branch before"
+ },
+ {
+  "file": "src/ind.ml",
+  "context": "peel (E.instantiate1 b fv) (i + 1) (indices @ [ (id, fv) ])",
+  "from": "i + 1",
+  "to": "i",
+  "why": "once the parameters are peeled the position only has to stay at or above the parameter count"
+ },
+ {
+  "file": "src/level.ml",
+  "context": "if List.length split > max_splits then raise Too_complex;",
+  "from": ">",
+  "to": ">=",
+  "why": "a budget boundary: a level problem with exactly the maximum number of splits"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "let tn = whnf_core ~cheap_proj:true st t and sn = whnf_core ~cheap_proj:true st s in",
+  "from": "true",
+  "to": "false",
+  "why": "cheap projections only avoid work; the answer is the same"
+ },
+ {
+  "file": "src/tc.ml",
+  "context": "| _ -> false)",
+  "from": "false",
+  "to": "true",
+  "why": "eta expansion of a lambda against a term whose type is not a function type: both sides of a comparison have the same type, so this cannot be reached"
+ },
+ {
+  "file": "src/expr.ml",
+  "context": "| x :: xs, y :: ys -> x == y && list_phys_equal xs ys",
+  "from": "&&",
+  "to": "||",
+  "why": "only matters when two different level lists have the same hash (the hash covers every level in the list); showing it needs an engineered collision"
+ },
+ {
+  "file": "src/quot.ml",
+  "context": "|| i.nparams <> 2 || i.nindices <> 1 || i.ctors <> [ n_eq_refl ] || r.lparams <> [ eu ]",
+  "from": "||",
+  "to": "&&",
+  "why": "OPEN: needs an inductive family with Eq's type and Eq.refl's type but another split of parameters and indices (and its own recursor); the type checks around it make it very hard to reach, but no test shows it"
+ },
+ {
+  "file": "src/ind.ml",
+  "context": "let ds = List.filteri (fun i _ -> i < ji.nparams) args in",
+  "from": "<",
+  "to": "<=",
+  "why": "OPEN: matters for a nested occurrence in a container that has indices; no test has one"
  }
 ]
