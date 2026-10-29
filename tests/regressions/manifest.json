@@ -950,6 +950,11 @@
    "why": "the control for the previous file: that Eq on its own is a valid inductive family."
   },
   {
+   "path": "nested-in-indexed-container.ndjson",
+   "expect": "accept",
+   "why": "Vec (A : Type w) : Nat -> Type w with its recursor, and T := mk (Vec T 0): a nested occurrence in a container that has an index. The auxiliary type has the index, the nested recursor takes it, and the rules rebuild the container's constructors over T. Found by mutation testing: nothing else nested through a container with indices, so the split of the container's arguments into parameters and indices could be changed unnoticed."
+  },
+  {
    "path": "work-budget-exhausted.ndjson",
    "expect": "decline",
    "why": "the same file as nat-log2-literal, run with a work budget of 10 steps (WARRANT_FUEL): the checker declines and says why. With its normal budget (400 million steps) the file is accepted. A budget can turn an accept into a decline, never a decline into an accept.",

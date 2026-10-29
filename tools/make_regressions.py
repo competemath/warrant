@@ -1911,6 +1911,183 @@ add(
     "the control for the previous file: that Eq on its own is a valid inductive family.",
 )
 
+# A nested occurrence in a container that has an index: Vec (a : Type) : Nat -> Type, and T := mk (Vec T 0). The container's
+# recursor and the nested type's two recursors are written as the checker derives them.
+W = ("param", "w")
+TYPE_W = ("sort", ("succ", W))
+NZERO = ("const", "Nat.zero", [])
+nsucc = lambda n: _app(("const", "Nat.succ", []), n)  # noqa: E731
+vec_w = lambda *a: _app(("const", "Vec", [W]), *a)  # noqa: E731
+vec_nil_w = lambda a: _app(("const", "Vec.nil", [W]), a)  # noqa: E731
+vec_cons_w = lambda *a: _app(("const", "Vec.cons", [W]), *a)  # noqa: E731
+vec_0 = lambda *a: _app(("const", "Vec", [0]), *a)  # noqa: E731
+vec_nil_0 = lambda a: _app(("const", "Vec.nil", [0]), a)  # noqa: E731
+vec_cons_0 = lambda *a: _app(("const", "Vec.cons", [0]), *a)  # noqa: E731
+
+
+def build_vec_nested(b, break_rule=None):
+    m_vec = tele("pin", [("n", NAT), ("v", vec_w(V("A"), V("n")))], SU)
+    nil_minor = _app(V("m"), NZERO, vec_nil_w(V("A")))
+    cons_minor = tele(
+        "pin",
+        [("n", NAT), ("a", V("A")), ("v", vec_w(V("A"), V("n"))), ("ih", _app(V("m"), V("n"), V("v")))],
+        _app(V("m"), nsucc(V("n")), vec_cons_w(V("A"), V("n"), V("a"), V("v"))),
+    )
+    vec_head = [("A", TYPE_W), ("m", m_vec), ("nl", nil_minor), ("cn", cons_minor)]
+    vec_rec_ty = tele("pin", vec_head + [("n", NAT), ("t", vec_w(V("A"), V("n")))], _app(V("m"), V("n"), V("t")))
+    vrec = lambda *a: _app(("const", "Vec.rec", [("param", "u"), W]), V("A"), V("m"), V("nl"), V("cn"), *a)  # noqa: E731
+    b.inductive(
+        [
+            {
+                "name": "Vec",
+                "lparams": ["w"],
+                "type": db(tele("pin", [("A", TYPE_W), ("n", NAT)], TYPE_W), []),
+                "num_params": 1,
+                "num_indices": 1,
+                "ctors": ["Vec.nil", "Vec.cons"],
+                "is_rec": True,
+            }
+        ],
+        [
+            {
+                "name": "Vec.nil",
+                "induct": "Vec",
+                "lparams": ["w"],
+                "type": db(tele("pin", [("A", TYPE_W)], vec_w(V("A"), NZERO)), []),
+                "cidx": 0,
+                "num_params": 1,
+                "num_fields": 0,
+            },
+            {
+                "name": "Vec.cons",
+                "induct": "Vec",
+                "lparams": ["w"],
+                "type": db(
+                    tele(
+                        "pin",
+                        [("A", TYPE_W), ("n", NAT), ("a", V("A")), ("v", vec_w(V("A"), V("n")))],
+                        vec_w(V("A"), nsucc(V("n"))),
+                    ),
+                    [],
+                ),
+                "cidx": 1,
+                "num_params": 1,
+                "num_fields": 3,
+            },
+        ],
+        [
+            {
+                "name": "Vec.rec",
+                "lparams": ["u", "w"],
+                "type": db(vec_rec_ty, []),
+                "num_params": 1,
+                "num_indices": 1,
+                "num_motives": 1,
+                "num_minors": 2,
+                "rules": [
+                    ("Vec.nil", 0, db(tele("lamn", vec_head, V("nl")), [])),
+                    (
+                        "Vec.cons",
+                        3,
+                        db(
+                            tele(
+                                "lamn",
+                                vec_head + [("n", NAT), ("a", V("A")), ("v", vec_w(V("A"), V("n")))],
+                                _app(V("cn"), V("n"), V("a"), V("v"), vrec(V("n"), V("v"))),
+                            ),
+                            [],
+                        ),
+                    ),
+                ],
+            }
+        ],
+    )
+    # the nested type T := mk (Vec T 0)
+    T_ = ("const", "T", [])
+    m1_t = tele("pin", [("t", T_)], SU)
+    m2_t = tele("pin", [("n", NAT), ("v", vec_0(T_, V("n")))], SU)
+    mk_minor = tele(
+        "pin",
+        [("a", vec_0(T_, NZERO)), ("ih", _app(V("m2"), NZERO, V("a")))],
+        _app(V("m1"), _app(("const", "T.mk", []), V("a"))),
+    )
+    nl_minor = _app(V("m2"), NZERO, vec_nil_0(T_))
+    cn_minor = tele(
+        "pin",
+        [
+            ("n", NAT),
+            ("a", T_),
+            ("v", vec_0(T_, V("n"))),
+            ("ih1", _app(V("m1"), V("a"))),
+            ("ih2", _app(V("m2"), V("n"), V("v"))),
+        ],
+        _app(V("m2"), nsucc(V("n")), vec_cons_0(T_, V("n"), V("a"), V("v"))),
+    )
+    head = [("m1", m1_t), ("m2", m2_t), ("mk", mk_minor), ("nl", nl_minor), ("cn", cn_minor)]
+    rec0_ty = tele("pin", head + [("t", T_)], _app(V("m1"), V("t")))
+    rec1_ty = tele("pin", head + [("n", NAT), ("t", vec_0(T_, V("n")))], _app(V("m2"), V("n"), V("t")))
+    hargs = [V(n) for n, _ in head]
+    r0 = lambda *a: _app(("const", "T.rec", [("param", "u")]), *hargs, *a)  # noqa: E731
+    r1 = lambda *a: _app(("const", "T.rec_1", [("param", "u")]), *hargs, *a)  # noqa: E731
+    rule_mk = tele("lamn", head + [("a", vec_0(T_, NZERO))], _app(V("mk"), V("a"), r1(NZERO, V("a"))))
+    rule_nil = tele("lamn", head, V("nl"))
+    rule_cons = tele(
+        "lamn",
+        head + [("n", NAT), ("a", T_), ("v", vec_0(T_, V("n")))],
+        _app(V("cn"), V("n"), V("a"), V("v"), r0(V("a")), r1(V("n"), V("v"))),
+    )
+    recs = [
+        {
+            "name": "T.rec",
+            "lparams": ["u"],
+            "type": db(rec0_ty, []),
+            "num_params": 0,
+            "num_indices": 0,
+            "num_motives": 2,
+            "num_minors": 3,
+            "rules": [("T.mk", 1, db(rule_mk, []))],
+        },
+        {
+            "name": "T.rec_1",
+            "lparams": ["u"],
+            "type": db(rec1_ty, []),
+            "num_params": 0,
+            "num_indices": 1,
+            "num_motives": 2,
+            "num_minors": 3,
+            "rules": [("Vec.nil", 0, db(rule_nil, [])), ("Vec.cons", 3, db(rule_cons, []))],
+        },
+    ]
+    if break_rule:
+        break_rule(recs)
+    b.inductive(
+        [{"name": "T", "type": ("sort", ONE), "num_params": 0, "ctors": ["T.mk"], "is_rec": True, "num_nested": 1}],
+        [
+            {
+                "name": "T.mk",
+                "induct": "T",
+                "type": db(tele("pin", [("a", vec_0(T_, NZERO))], T_), []),
+                "cidx": 0,
+                "num_params": 0,
+                "num_fields": 1,
+            }
+        ],
+        recs,
+    )
+
+
+b = base("Nat", "Nat.zero", "Nat.succ")
+build_vec_nested(b)
+add(
+    "nested-in-indexed-container.ndjson",
+    b.text(),
+    "accept",
+    "Vec (A : Type w) : Nat -> Type w with its recursor, and T := mk (Vec T 0): a nested occurrence in a container that has an "
+    "index. The auxiliary type has the index, the nested recursor takes it, and the rules rebuild the container's constructors over "
+    "T. Found by mutation testing: nothing else nested through a container with indices, so the split of the container's "
+    "arguments into parameters and indices could be changed unnoticed.",
+)
+
 # the checker's own work budget and its caches
 b = Builder.extending(prims)
 b.axiom("T", [], ("pi", NAT, ("sort", ONE)))
