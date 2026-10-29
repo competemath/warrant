@@ -1257,6 +1257,12 @@
    "msg": "the value does not have the declared type"
   },
   {
+   "path": "constructor-listed-by-no-type.ndjson",
+   "expect": "reject",
+   "why": "T lists the constructor T.mk, and the block declares a second constructor T.other that no type lists (found by mutation testing: every constructor the types list was checked, not the other way round).",
+   "msg": "belongs to no type of its block"
+  },
+  {
    "path": "work-budget-exhausted.ndjson",
    "expect": "decline",
    "why": "the same file as nat-log2-literal, run with a work budget of 10 steps (WARRANT_FUEL): the checker declines and says why. With its normal budget (400 million steps) the file is accepted. A budget can turn an accept into a decline, never a decline into an accept.",

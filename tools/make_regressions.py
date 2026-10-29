@@ -2663,6 +2663,27 @@ add(
     msg="the value does not have the declared type",
 )
 
+# a constructor declared in the block that no type of the block lists
+b = base("Nat")
+
+
+def add_unlisted_ctor(types, ctors, recs):
+    extra = dict(ctors[0])
+    extra["name"] = "T.other"
+    extra["cidx"] = 1
+    ctors.append(extra)
+
+
+one_field_block(b, NAT, NAT, add_unlisted_ctor)
+add(
+    "constructor-listed-by-no-type.ndjson",
+    b.text(),
+    "reject",
+    "T lists the constructor T.mk, and the block declares a second constructor T.other that no type lists (found by mutation "
+    "testing: every constructor the types list was checked, not the other way round).",
+    msg="belongs to no type of its block",
+)
+
 # the checker's own work budget and its caches
 b = Builder.extending(prims)
 b.axiom("T", [], ("pi", NAT, ("sort", ONE)))
