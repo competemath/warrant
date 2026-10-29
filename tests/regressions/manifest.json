@@ -764,6 +764,68 @@
    "msg": "the value does not have the declared type"
   },
   {
+   "path": "positivity-domain.ndjson",
+   "expect": "reject",
+   "why": "mk : (T -> Nat) -> T: T occurs in the domain of the field's type.",
+   "msg": "non-positive occurrence"
+  },
+  {
+   "path": "positivity-domain-of-domain.ndjson",
+   "expect": "reject",
+   "why": "mk : ((T -> Nat) -> Nat) -> T: T occurs in the domain of a domain (strict positivity forbids it, as in Lean).",
+   "msg": "non-positive occurrence"
+  },
+  {
+   "path": "positivity-under-binder.ndjson",
+   "expect": "reject",
+   "why": "mk : (Nat -> T -> Nat) -> T: the occurrence is in the second binder, below an innocent one.",
+   "msg": "non-positive occurrence"
+  },
+  {
+   "path": "positivity-argument-of-other-constant.ndjson",
+   "expect": "reject",
+   "why": "mk : F T -> T for an axiom F : Type -> Type: T occurs as an argument of something that is not an inductive type of the block (nor a nested one: F is not an inductive type), so the occurrence is invalid.",
+   "msg": "invalid occurrence"
+  },
+  {
+   "path": "const-level-not-declared.ndjson",
+   "expect": "reject",
+   "why": "d : Type := A.{w}, where w is not a universe parameter of d (found by mutation testing: no test used a constant at an undeclared level; the Sort case had two).",
+   "msg": "universe parameter out of scope in A"
+  },
+  {
+   "path": "string-literal-reversed.ndjson",
+   "expect": "accept",
+   "why": "String.ofList [..] against the literal \"ab\": the expansion also happens when the application is on the left."
+  },
+  {
+   "path": "string-literal-reversed-wrong.ndjson",
+   "expect": "reject",
+   "why": "String.ofList [..] against the literal \"ab\": the expansion also happens when the application is on the left.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "string-mk-literal.ndjson",
+   "expect": "accept",
+   "why": "A toolchain whose String has the constructor String.mk (and no String.ofList): the literal \"ab\" is String.mk [a, b]. Found by mutation testing: nothing used the older name."
+  },
+  {
+   "path": "string-mk-literal-wrong.ndjson",
+   "expect": "reject",
+   "why": "A toolchain whose String has the constructor String.mk (and no String.ofList): the literal \"ab\" is String.mk [a, b]. Found by mutation testing: nothing used the older name.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "nested-auxiliary-name-taken.ndjson",
+   "expect": "accept",
+   "why": "the nested tree of the previous file in an environment where `_nested.List_1`, the first name the checker would give the auxiliary type for List, already exists: it must take the next one. A mutation that skipped the check for an existing name collided with the declaration (found by mutation testing)."
+  },
+  {
+   "path": "recursor-partial-application-eta.ndjson",
+   "expect": "accept",
+   "why": "Nat.rec (fun _ => Nat) 0 (fun _ ih => ih) has its major premise missing: it is stuck, and equal to its eta-expansion. A mutation that read the major premise past the end of the arguments raised an internal error (a decline) here (found by mutation testing: nothing else compared a partly applied recursor)."
+  },
+  {
    "path": "work-budget-exhausted.ndjson",
    "expect": "decline",
    "why": "the same file as nat-log2-literal, run with a work budget of 10 steps (WARRANT_FUEL): the checker declines and says why. With its normal budget (400 million steps) the file is accepted. A budget can turn an accept into a decline, never a decline into an accept.",

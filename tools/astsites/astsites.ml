@@ -87,6 +87,7 @@ let () =
   let str = parse file src in
   collect_types str;
   let out = ref [] in
+  let strs = ref [] in
   let sl (l : Location.t) =
     String.sub src l.loc_start.pos_cnum (l.loc_end.pos_cnum - l.loc_start.pos_cnum)
   in
@@ -229,6 +230,7 @@ let () =
            && String.length str <= 80
            && (not (String.contains str '%'))
            && not (String.contains str '\n') ->
+        strs := (e.pexp_loc, str) :: !strs;
         add "str-change" e.pexp_loc ("\"" ^ String.escaped str ^ "~\"")
     | Pexp_construct ({ txt = Longident.Lident "Some"; _ }, Some _) ->
         add "some-none" e.pexp_loc "None"
@@ -287,4 +289,14 @@ let () =
   in
   let it = { Ast_iterator.default_iterator with expr; pat; structure_item } in
   it.structure it str;
+  (* two string constants exchanged: kinds of declaration that share a tag, primitives that share a name *)
+  let arr = Array.of_list (List.rev !strs) in
+  Array.iteri
+    (fun i ((l : Location.t), a) ->
+      if i + 1 < Array.length arr then
+        let l2, b = arr.(i + 1) in
+        if a <> b then (
+          add "str-swap" l ("\"" ^ String.escaped b ^ "\"");
+          add "str-swap" l2 ("\"" ^ String.escaped a ^ "\"")))
+    arr;
   print_string (Yojson.Safe.to_string (`List (List.rev !out)))

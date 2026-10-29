@@ -1513,6 +1513,139 @@ add(
     msg=DEFEQ_MSG,
 )
 
+# ---------------------------------------------------------------------------------------------------------------------
+# Mutation round 3: what the AST-level mutants of the inductive and universe checks found no test for.
+
+# A constructor field whose type has a non-positive occurrence is refused by the positivity check itself. The claims are the
+# ones the checker would derive were the occurrence harmless (the field is not recursive: no induction hypothesis), so that
+# nothing else about the file is wrong; a mutation that dropped the check then accepted the file, and the existing tests only
+# refused such files because their claimed flags happened to differ.
+b = base("Nat")
+b.axiom("F", [], ("pi", ("sort", ONE), ("sort", ONE)))
+for name, field_ty, why in [
+    ("positivity-domain", ("pi", T, NAT), "mk : (T -> Nat) -> T: T occurs in the domain of the field's type"),
+    (
+        "positivity-domain-of-domain",
+        ("pi", ("pi", T, NAT), NAT),
+        "mk : ((T -> Nat) -> Nat) -> T: T occurs in the domain of a domain (strict positivity forbids it, as in Lean)",
+    ),
+    (
+        "positivity-under-binder",
+        ("pi", NAT, ("pi", T, NAT)),
+        "mk : (Nat -> T -> Nat) -> T: the occurrence is in the second binder, below an innocent one",
+    ),
+]:
+    b = base("Nat")
+    # the flags are the derived ones, too: the type is recursive and reflexive by the syntactic definition
+    one_field_block(b, field_ty, field_ty, lambda types, ctors, recs: types[0].update(is_rec=True, is_reflexive=True))
+    add(
+        name + ".ndjson",
+        b.text(),
+        "reject",
+        why + ".",
+        msg="non-positive occurrence",
+    )
+b = base("Nat")
+b.axiom("F", [], ("pi", ("sort", ONE), ("sort", ONE)))
+one_field_block(
+    b,
+    ("app", ("const", "F", []), T),
+    ("app", ("const", "F", []), T),
+    lambda types, ctors, recs: types[0].update(is_rec=True),
+)
+add(
+    "positivity-argument-of-other-constant.ndjson",
+    b.text(),
+    "reject",
+    "mk : F T -> T for an axiom F : Type -> Type: T occurs as an argument of something that is not an inductive type of the block "
+    "(nor a nested one: F is not an inductive type), so the occurrence is invalid.",
+    msg="invalid occurrence",
+)
+
+# a constant used at a universe level that is not declared
+b = Builder()
+b.axiom("A", ["v"], ("sort", ONE))
+b.definition("d", [], ("sort", ONE), ("const", "A", [("param", "w")]))
+add(
+    "const-level-not-declared.ndjson",
+    b.text(),
+    "reject",
+    "d : Type := A.{w}, where w is not a universe parameter of d (found by mutation testing: no test used a constant at an "
+    "undeclared level; the Sort case had two).",
+    msg="universe parameter out of scope in A",
+)
+
+# string literals compared the other way round, and against String.mk (older toolchains)
+for name, cps, expect in [
+    ("string-literal-reversed", [97, 98], "accept"),
+    ("string-literal-reversed-wrong", [97, 99], "reject"),
+]:
+    b = string_base()
+    b.theorem(
+        "t",
+        [],
+        _app(("const", "Eq", [ONE]), STRING, of_list(cps), ("str", "ab")),
+        _app(("const", "Eq.refl", [ONE]), STRING, of_list(cps)),
+    )
+    add(
+        name + ".ndjson",
+        b.text(),
+        expect,
+        'String.ofList [..] against the literal "ab": the expansion also happens when the application is on the left.',
+        msg=DEFEQ_MSG if expect == "reject" else None,
+    )
+for name, cps, expect in [("string-mk-literal", [97, 98], "accept"), ("string-mk-literal-wrong", [97, 99], "reject")]:
+    b = base("Char", "Nat", "List", "List.nil", "List.cons", "Eq", "Eq.refl", "Char.ofNat")
+    b.axiom("String", [], ("sort", ONE))
+    b.axiom("String.mk", [], ("pi", ("app", ("const", "List", [0]), CHAR), STRING))
+    b.theorem(
+        "t",
+        [],
+        _app(("const", "Eq", [ONE]), STRING, ("str", "ab"), _app(("const", "String.mk", []), chars(cps))),
+        _app(("const", "Eq.refl", [ONE]), STRING, ("str", "ab")),
+    )
+    add(
+        name + ".ndjson",
+        b.text(),
+        expect,
+        'A toolchain whose String has the constructor String.mk (and no String.ofList): the literal "ab" is String.mk '
+        "[a, b]. Found by mutation testing: nothing used the older name.",
+        msg=DEFEQ_MSG if expect == "reject" else None,
+    )
+
+# the auxiliary type made for a nested occurrence takes a name no declaration has
+b = base("Nat", "List", "List.nil", "List.cons")
+b.axiom("_nested.List_1", [], ("sort", ONE))
+build_nested_param_tree(b)
+add(
+    "nested-auxiliary-name-taken.ndjson",
+    b.text(),
+    "accept",
+    "the nested tree of the previous file in an environment where `_nested.List_1`, the first name the checker would give the "
+    "auxiliary type for List, already exists: it must take the next one. A mutation that skipped the check for an existing name "
+    "collided with the declaration (found by mutation testing).",
+)
+
+# a recursor applied to fewer arguments than it takes is stuck, not an error
+b = base("Nat", "Nat.rec", "Nat.zero", "Eq", "Eq.refl")
+motive = ("lam", NAT, NAT)
+partial = _app(("const", "Nat.rec", [ONE]), motive, ("nat", 0), ("lam", NAT, ("lam", NAT, ("bvar", 0))))
+nat_to_nat = ("pi", NAT, NAT)
+b.theorem(
+    "t",
+    [],
+    _app(("const", "Eq", [ONE]), nat_to_nat, partial, ("lam", NAT, ("app", partial, ("bvar", 0)))),
+    _app(("const", "Eq.refl", [ONE]), nat_to_nat, partial),
+)
+add(
+    "recursor-partial-application-eta.ndjson",
+    b.text(),
+    "accept",
+    "Nat.rec (fun _ => Nat) 0 (fun _ ih => ih) has its major premise missing: it is stuck, and equal to its eta-expansion. A "
+    "mutation that read the major premise past the end of the arguments raised an internal error (a decline) here "
+    "(found by mutation testing: nothing else compared a partly applied recursor).",
+)
+
 # the checker's own work budget and its caches
 b = Builder.extending(prims)
 b.axiom("T", [], ("pi", NAT, ("sort", ONE)))

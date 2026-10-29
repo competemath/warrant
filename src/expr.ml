@@ -34,18 +34,24 @@ let shallow_equal a b =
   | Proj (n1, i1, s1), Proj (n2, i2, s2) -> n1 == n2 && i1 = i2 && s1 == s2
   | _ -> false
 
+(* WARRANT_HASH_MASK=0 makes every term collide: a run of the corpus under it is a test of [shallow_equal] alone *)
+let hash_mask = Knobs.limit "WARRANT_HASH_MASK" max_int
+
 let shallow_hash a =
-  match a.node with
-  | BVar i -> Hashtbl.hash (0, i)
-  | FVar i -> Hashtbl.hash (1, i)
-  | Sort l -> Hashtbl.hash (2, l.Level.id)
-  | Const (n, ls) -> Hashtbl.hash (3, n.Name.id, List.map (fun (l : Level.t) -> l.id) ls)
-  | App (f, x) -> Hashtbl.hash (4, f.id, x.id)
-  | Lam (d, b) -> Hashtbl.hash (5, d.id, b.id)
-  | Pi (d, b) -> Hashtbl.hash (6, d.id, b.id)
-  | Let (t, v, b) -> Hashtbl.hash (7, t.id, v.id, b.id)
-  | Proj (n, i, s) -> Hashtbl.hash (8, n.Name.id, i, s.id)
-  | Nat _ | Str _ -> 0
+  let h =
+    match a.node with
+    | BVar i -> Hashtbl.hash (0, i)
+    | FVar i -> Hashtbl.hash (1, i)
+    | Sort l -> Hashtbl.hash (2, l.Level.id)
+    | Const (n, ls) -> Hashtbl.hash (3, n.Name.id, List.map (fun (l : Level.t) -> l.id) ls)
+    | App (f, x) -> Hashtbl.hash (4, f.id, x.id)
+    | Lam (d, b) -> Hashtbl.hash (5, d.id, b.id)
+    | Pi (d, b) -> Hashtbl.hash (6, d.id, b.id)
+    | Let (t, v, b) -> Hashtbl.hash (7, t.id, v.id, b.id)
+    | Proj (n, i, s) -> Hashtbl.hash (8, n.Name.id, i, s.id)
+    | Nat _ | Str _ -> 0
+  in
+  hash_mask land h
 
 module W = Weak.Make (struct
   type nonrec t = t

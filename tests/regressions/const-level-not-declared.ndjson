@@ -1,0 +1,12 @@
+{"meta":{"exporter":{"name":"forge","version":"0"},"format":{"version":"3.1.0"},"lean":{"githash":"0000000000000000000000000000000000000000","version":"4.29.1"}}}
+{"in":1,"str":{"pre":0,"str":"A"}}
+{"in":2,"str":{"pre":0,"str":"v"}}
+{"il":1,"param":2}
+{"il":2,"succ":0}
+{"ie":0,"sort":2}
+{"axiom":{"isUnsafe":false,"levelParams":[2],"name":1,"type":0}}
+{"in":3,"str":{"pre":0,"str":"d"}}
+{"in":4,"str":{"pre":0,"str":"w"}}
+{"il":3,"param":4}
+{"const":{"name":1,"us":[3]},"ie":1}
+{"def":{"all":[3],"hints":"abbrev","levelParams":[],"name":3,"safety":"safe","type":0,"value":1}}
