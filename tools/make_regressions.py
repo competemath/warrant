@@ -29,7 +29,7 @@ os.makedirs(OUT, exist_ok=True)
 files = []
 
 
-def add(name, text, expect, why, msg=None, may_decline=False):
+def add(name, text, expect, why, msg=None, may_decline=False, env=None):
     with open(os.path.join(OUT, name), "w", encoding="utf-8") as f:
         f.write(text)
     e = {"path": name, "expect": expect, "why": why}
@@ -37,6 +37,8 @@ def add(name, text, expect, why, msg=None, may_decline=False):
         e["msg"] = msg
     if may_decline:
         e["may_decline"] = True
+    if env:
+        e["env"] = env
     files.append(e)
 
 
@@ -1179,6 +1181,464 @@ for path, decl, why in [
     ),
 ]:
     files.append({"path": path, "expect": "accept", "why": why + " Cut with: " + SLICE + decl})
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# What the coverage report and the second mutation round found no test for.
+
+DEFEQ_MSG = "the value does not have the declared type"
+
+
+def nat_def(name, term, claimed, expect, why, msg=None):
+    """`d : T term := t` where `t : T claimed`: accepted exactly when term and claimed are definitionally equal."""
+    b = Builder.extending(prims)
+    b.axiom("T", [], ("pi", NAT, ("sort", ONE)))
+    b.axiom("t", [], _app(("const", "T", []), ("nat", claimed)))
+    b.definition("d", [], _app(("const", "T", []), term), ("const", "t", []))
+    add(name + ".ndjson", b.text(), expect, why, msg=msg or (DEFEQ_MSG if expect == "reject" else None))
+
+
+def N(op, *args):
+    return _app(("const", op, []), *[("nat", x) for x in args])
+
+
+for op, x, y, claimed, expect, how in [
+    ("Nat.div", 7, 0, 0, "accept", "dividing by zero gives zero"),
+    ("Nat.div", 7, 0, 7, "reject", "dividing by zero does not give the dividend"),
+    ("Nat.mod", 7, 0, 7, "accept", "the remainder modulo zero is the number itself"),
+    ("Nat.mod", 7, 0, 0, "reject", "the remainder modulo zero is not zero"),
+    ("Nat.div", 7, 2, 3, "accept", "division rounds down"),
+    ("Nat.div", 7, 2, 4, "reject", "division does not round up"),
+    ("Nat.mod", 7, 2, 1, "accept", "7 mod 2"),
+    ("Nat.mod", 7, 2, 0, "reject", "7 mod 2 is not 0"),
+    ("Nat.gcd", 12, 18, 6, "accept", "greatest common divisor"),
+    ("Nat.gcd", 12, 18, 12, "reject", "gcd is not the first argument"),
+    ("Nat.land", 12, 10, 8, "accept", "bitwise and"),
+    ("Nat.land", 12, 10, 14, "reject", "bitwise and is not or"),
+    ("Nat.lor", 12, 10, 14, "accept", "bitwise or"),
+    ("Nat.lor", 12, 10, 8, "reject", "bitwise or is not and"),
+    ("Nat.xor", 12, 10, 6, "accept", "bitwise exclusive or"),
+    ("Nat.xor", 12, 10, 14, "reject", "exclusive or is not or"),
+    ("Nat.shiftLeft", 3, 4, 48, "accept", "3 shifted left by 4"),
+    ("Nat.shiftLeft", 3, 4, 12, "reject", "a shift left is not a shift by the other amount"),
+    ("Nat.shiftRight", 48, 4, 3, "accept", "48 shifted right by 4"),
+    ("Nat.shiftRight", 48, 4, 768, "reject", "a shift right is not a shift left"),
+    (
+        "Nat.shiftRight",
+        5,
+        10**20,
+        0,
+        "accept",
+        "shifting right by more than the number has bits leaves nothing, whatever the amount",
+    ),
+    ("Nat.shiftRight", 5, 10**20, 5, "reject", "the amount is not ignored"),
+]:
+    nat_def(
+        f"nat-{op.split('.')[1].lower()}-{x}-{y}-{claimed}",
+        N(op, x, y),
+        claimed,
+        expect,
+        f"{op} {x} {y} is claimed to be {claimed} ({how}). The operation is decided by the literal shortcut, so a mutation of "
+        "one of its cases (found by coverage: division by zero was never run) changes this verdict.",
+    )
+
+# the limits of the shortcuts: a result beyond them is declined, one at the limit is computed
+LOG2 = "Nat.log2"
+for name, term, claimed, expect, why in [
+    (
+        "pow-exponent-at-limit",
+        N("Nat.pow", 1, 16777216),
+        1,
+        "accept",
+        "1 to the power 2^24, the largest exponent the shortcut takes",
+    ),
+    (
+        "pow-exponent-over-limit",
+        N("Nat.pow", 1, 16777217),
+        1,
+        "decline",
+        "1 to the power 2^24+1: one past the largest exponent, declined (the result would be 1, but the limit is on the "
+        "exponent, not the result)",
+    ),
+    (
+        "pow-size-at-limit",
+        _app(("const", LOG2, []), N("Nat.pow", 32768, 16777216)),
+        251658240,
+        "accept",
+        "32768^(2^24) has 15*2^24+1 bits: its size estimate, 16*2^24 = 2^28, is exactly the limit and is computed",
+    ),
+    (
+        "pow-size-over-limit",
+        _app(("const", LOG2, []), N("Nat.pow", 65536, 16777216)),
+        268435456,
+        "decline",
+        "65536^(2^24): the size estimate is 17*2^24, over the limit 2^28",
+    ),
+    (
+        "shiftleft-amount-at-limit",
+        _app(("const", LOG2, []), N("Nat.shiftLeft", 1, 16777216)),
+        16777216,
+        "accept",
+        "1 shifted left by 2^24, the largest amount the shortcut takes",
+    ),
+    (
+        "shiftleft-amount-over-limit",
+        _app(("const", LOG2, []), N("Nat.shiftLeft", 1, 16777217)),
+        16777217,
+        "decline",
+        "one past the largest shift",
+    ),
+    (
+        "shiftleft-amount-huge",
+        _app(("const", LOG2, []), N("Nat.shiftLeft", 1, 10**30)),
+        1,
+        "decline",
+        "a shift by 10^30 does not fit a machine integer: it must be declined before the amount is converted",
+    ),
+]:
+    nat_def(
+        "nat-" + name,
+        term,
+        claimed,
+        expect,
+        why + ". A decline is the checker saying it cannot decide, never a verdict.",
+        msg="too large" if expect == "decline" else None,
+    )
+
+# string literals: the meaning of "ab" is String.ofList [Char.ofNat 97, Char.ofNat 98]
+STRING = ("const", "String", [])
+CHAR = ("const", "Char", [])
+
+
+def chars(cps):
+    lst = _app(("const", "List.nil", [0]), CHAR)
+    for cp in reversed(cps):
+        lst = _app(("const", "List.cons", [0]), CHAR, _app(("const", "Char.ofNat", []), ("nat", cp)), lst)
+    return lst
+
+
+def of_list(cps):
+    return _app(("const", "String.ofList", []), chars(cps))
+
+
+def string_base():
+    return base(
+        "String", "Char", "Nat", "List", "List.nil", "List.cons", "Eq", "Eq.refl", "String.ofList", "Char.ofNat",
+        "String.toByteArray", "ByteArray",
+    )  # fmt: skip
+
+
+for name, s, cps, expect, why in [
+    ("string-literal-expands", "ab", [97, 98], "accept", '"ab" is String.ofList [97, 98]'),
+    ("string-literal-empty", "", [], "accept", '"" is String.ofList []'),
+    ("string-literal-wrong-char", "ab", [97, 99], "reject", "the second character differs"),
+    ("string-literal-too-short", "ab", [97], "reject", "the list is shorter than the string"),
+    ("string-literal-too-long", "a", [97, 98], "reject", "the list is longer than the string"),
+    ("string-literal-two-byte-char", "é", [233], "accept", "a character of two UTF-8 bytes is one list element"),
+    ("string-literal-bytes-not-chars", "é", [195, 169], "reject", "the elements are characters, not bytes"),
+    ("string-literal-three-byte-char", "€", [8364], "accept", "a character of three UTF-8 bytes"),
+    ("string-literal-four-byte-char", "\U0001f600", [128512], "accept", "a character of four UTF-8 bytes"),
+    ("string-literal-mixed-widths", "héllo", [104, 233, 108, 108, 111], "accept", "characters of different widths"),
+    ("string-literal-mixed-widths-wrong", "héllo", [104, 233, 108, 111], "reject", "one character missing"),
+]:
+    b = string_base()
+    b.theorem(
+        "t",
+        [],
+        _app(("const", "Eq", [ONE]), STRING, ("str", s), of_list(cps)),
+        _app(("const", "Eq.refl", [ONE]), STRING, ("str", s)),
+    )
+    add(
+        name + ".ndjson",
+        b.text(),
+        expect,
+        f"{why}. Found by coverage: the expansion of a string literal into the environment's String.ofList was reached by "
+        "no quick test (only by the full Init check).",
+        msg=DEFEQ_MSG if expect == "reject" else None,
+    )
+
+b = string_base()
+b.theorem(
+    "t",
+    [],
+    _app(("const", "Eq", [ONE]), STRING, ("str", "a"), ("str", "b")),
+    _app(("const", "Eq.refl", [ONE]), STRING, ("str", "a")),
+)
+add(
+    "string-literals-differ.ndjson",
+    b.text(),
+    "reject",
+    '"a" and "b" are different literals; a mutation that made two string literals equal whatever their text accepted.',
+    msg=DEFEQ_MSG,
+)
+for name, cps, expect in [
+    ("string-literal-whnf", [97, 98], "accept"),
+    ("string-literal-whnf-wrong", [97, 99], "reject"),
+]:
+    b = string_base()
+    bytes_of = lambda x: _app(("const", "String.toByteArray", []), x)  # noqa: E731
+    b.theorem(
+        "t",
+        [],
+        _app(("const", "Eq", [ONE]), ("const", "ByteArray", []), bytes_of(("str", "ab")), bytes_of(of_list(cps))),
+        _app(("const", "Eq.refl", [ONE]), ("const", "ByteArray", []), bytes_of(("str", "ab"))),
+    )
+    add(
+        name + ".ndjson",
+        b.text(),
+        expect,
+        'String.toByteArray of the literal "ab" against String.toByteArray of the expansion: the literal must be expanded '
+        "when it is the major premise of a recursor or the argument of a projection (found by coverage).",
+        msg=DEFEQ_MSG if expect == "reject" else None,
+    )
+
+# a primitive whose dependency is not the genuine definition loses the shortcut (the fingerprint holds the kind of every
+# constant it depends on)
+with open(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tests", "prims", "init-4.34.0-rc2.ndjson"),
+    encoding="utf-8",
+) as f:
+    prim_lines = f.read().splitlines()
+add_lines = slice_lines(prim_lines, ["Nat.add"])  # Nat.add and what it is built from, nothing else
+prim_names = {0: ""}  # the ids of the cut, not of the whole file
+for ln in add_lines:
+    o = json.loads(ln)
+    if "in" in o:
+        sub = o.get("str") or o.get("num")
+        pre = prim_names[sub["pre"]]
+        last = sub["str"] if "str" in o else str(sub["i"])
+        prim_names[o["in"]] = (pre + "." if pre else "") + last
+
+
+def tamper_dependency(dep, to_kind):
+    out = []
+    for ln in add_lines:
+        o = json.loads(ln)
+        d = o.get("def")
+        if d and prim_names[d["name"]] == dep:
+            if to_kind == "opaque":
+                o = {
+                    "opaque": {
+                        "name": d["name"], "levelParams": d["levelParams"], "type": d["type"], "value": d["value"],
+                        "isUnsafe": False, "all": d["all"],
+                    }
+                }  # fmt: skip
+            else:
+                o = {
+                    "axiom": {"name": d["name"], "levelParams": d["levelParams"], "type": d["type"], "isUnsafe": False}
+                }
+            ln = json.dumps(o, separators=(",", ":"), sort_keys=True)
+        out.append(ln)
+    return out
+
+
+for kind in ("genuine", "opaque", "axiom"):
+    b = Builder.extending(add_lines if kind == "genuine" else tamper_dependency("Nat.add._f", kind))
+    b.axiom("T", [], ("pi", NAT, ("sort", ONE)))
+    b.axiom("t", [], _app(("const", "T", []), ("nat", 200000000)))
+    b.definition("d", [], _app(("const", "T", []), N("Nat.add", 100000000, 100000000)), ("const", "t", []))
+    if kind == "genuine":
+        add(
+            "prim-dependency-genuine.ndjson",
+            b.text(),
+            "accept",
+            "the control for the next two: Nat.add and what it is built from, as exported, and 10^8 + 10^8 = 2 * 10^8, which only the shortcut can decide (unfolding would take 10^8 steps).",
+        )
+        continue
+    add(
+        f"prim-dependency-{kind}.ndjson",
+        b.text(),
+        "reject",
+        f"Nat.add._f, the helper Nat.add is built from, is {'an opaque constant with the genuine value' if kind == 'opaque' else 'an axiom of the genuine type'}. "
+        "Nat.add no longer has the genuine fingerprint, so 10^8 + 10^8 is not computed, and unfolding stops at the helper: the claim "
+        "T (10^8 + 10^8) from t : T (2 * 10^8) is refused. If the fingerprint did not hold the kind of a dependency (an opaque constant, an axiom), the "
+        "shortcut would stay on and accept it (found by coverage: those branches of the fingerprint ran in no test).",
+        msg=DEFEQ_MSG,
+    )
+
+# two universe levels that are equal and are compared by the decision procedure, which splits on the parameters
+for n, expect in [(14, "accept"), (15, "decline")]:
+    ps = [f"u{i}" for i in range(1, n + 1)]
+
+    def mx(order):
+        lvl = ("param", order[-1])
+        for p_ in reversed(order[:-1]):
+            lvl = ("max", ("param", p_), lvl)
+        return lvl
+
+    b = Builder()
+    b.axiom("A", ps, ("sort", ("imax", ONE, mx(ps))))
+    b.definition("d", ps, ("sort", ("imax", ONE, mx(list(reversed(ps))))), ("const", "A", [("param", p_) for p_ in ps]))
+    add(
+        f"level-{n}-parameters-in-imax.ndjson",
+        b.text(),
+        expect,
+        f"Sort (imax 1 (max u1 .. u{n})) against the same with the parameters in the other order: equal levels that are not "
+        f"the same term, decided by splitting on each of the {n} parameters. The procedure splits on at most 14 and declines "
+        "beyond (the work doubles with each); a mutation of the bound moved the line.",
+        msg="universe constraint" if expect == "decline" else None,
+    )
+
+# the checker's own work budget and its caches
+b = Builder.extending(prims)
+b.axiom("T", [], ("pi", NAT, ("sort", ONE)))
+b.axiom("t", [], _app(("const", "T", []), ("nat", 9)))
+b.definition("d", [], _app(("const", "T", []), _app(("const", "Nat.log2", []), ("nat", 1000))), ("const", "t", []))
+add(
+    "work-budget-exhausted.ndjson",
+    b.text(),
+    "decline",
+    "the same file as nat-log2-literal, run with a work budget of 10 steps (WARRANT_FUEL): the checker declines and says why. "
+    "With its normal budget (400 million steps) the file is accepted. A budget can turn an accept into a decline, never a decline "
+    "into an accept.",
+    msg="work budget exhausted",
+    env={"WARRANT_FUEL": "10"},
+)
+
+# a term nested deeper than the stack allows is declined, not accepted and not a crash
+deep = [json.dumps(Builder.META, separators=(",", ":"))]
+for o in [
+    {"in": 1, "str": {"pre": 0, "str": "N"}}, {"in": 2, "str": {"pre": 0, "str": "s"}},
+    {"in": 3, "str": {"pre": 0, "str": "z"}}, {"in": 4, "str": {"pre": 0, "str": "d"}},
+    {"il": 1, "succ": 0},
+    {"ie": 0, "sort": 1}, {"ie": 1, "const": {"name": 1, "us": []}}, {"ie": 2, "forallE": {"type": 1, "body": 1}},
+    {"ie": 3, "const": {"name": 2, "us": []}}, {"ie": 4, "const": {"name": 3, "us": []}},
+    {"axiom": {"name": 1, "levelParams": [], "type": 0, "isUnsafe": False}},
+    {"axiom": {"name": 2, "levelParams": [], "type": 2, "isUnsafe": False}},
+    {"axiom": {"name": 3, "levelParams": [], "type": 1, "isUnsafe": False}},
+]:  # fmt: skip
+    deep.append(json.dumps(o, separators=(",", ":")))
+prev = 4
+for k in range(3000):
+    deep.append(json.dumps({"ie": 5 + k, "app": {"fn": 3, "arg": prev}}, separators=(",", ":")))
+    prev = 5 + k
+deep.append(
+    json.dumps(
+        {
+            "def": {
+                "name": 4,
+                "levelParams": [],
+                "type": 1,
+                "value": prev,
+                "hints": "abbrev",
+                "safety": "safe",
+                "all": [4],
+            }
+        },
+        separators=(",", ":"),
+    )
+)
+add(
+    "deep-term-accepted.ndjson",
+    "\n".join(deep) + "\n",
+    "accept",
+    "s (s (... z)) nested 3000 deep, with the stack the checker normally has: accepted. The control for the next file.",
+)
+add(
+    "deep-term-stack-overflow.ndjson",
+    "\n".join(deep) + "\n",
+    "decline",
+    "the same file with a stack of 1000 words (OCAMLRUNPARAM=l=1000): the checker declines with the reason instead of "
+    "crashing or guessing (found by coverage: the handler had never run).",
+    msg="stack overflow",
+    env={"OCAMLRUNPARAM": "l=1000"},
+)
+
+# a file that is not valid JSON, a wrong shape of any value: the parser declines and names what it found
+m1 = json.dumps(Builder.META, separators=(",", ":"))
+okname = '{"in":1,"str":{"pre":0,"str":"a"}}'
+oksort = '{"il":1,"succ":0}\n{"ie":0,"sort":0}'
+for fname, lines, msg_, why in [
+    ("missing-field", ['{"ie":1,"app":{"fn":0}}'], "missing field arg", "an application without its argument"),
+    (
+        "not-an-integer",
+        ['{"in":"x","str":{"pre":0,"str":"a"}}'],
+        "expected an integer",
+        "a name index that is a string",
+    ),
+    (
+        "not-a-boolean",
+        [okname, oksort, '{"axiom":{"name":1,"levelParams":[],"type":0,"isUnsafe":"yes"}}'],
+        "expected a boolean",
+        "isUnsafe as a string",
+    ),
+    ("not-a-string", ['{"in":1,"str":{"pre":0,"str":5}}'], "expected a string", "a name component that is a number"),
+    (
+        "not-a-list",
+        [okname, '{"ie":0,"const":{"name":1,"us":5}}'],
+        "expected a list",
+        "universe arguments that are a number",
+    ),
+    ("not-an-object", ['{"axiom":5}'], "expected an object", "a declaration that is a number"),
+    (
+        "unknown-hints",
+        [
+            okname,
+            oksort,
+            '{"def":{"name":1,"levelParams":[],"type":0,"value":0,"hints":"fast","safety":"safe","all":[1]}}',
+        ],
+        "unknown reducibility hints",
+        "hints that are not opaque, abbrev or regular",
+    ),
+    (
+        "unknown-quotient-kind",
+        [okname, oksort, '{"quot":{"kind":"zzz","name":1,"levelParams":[],"type":0}}'],
+        "unknown quotient kind",
+        "a quotient declaration of no known kind",
+    ),
+    ("unknown-expression-kind", ['{"ie":0,"zzz":1}'], "unknown expression kind", "an expression node of no known kind"),
+    ("level-operands", ['{"il":1,"max":[0]}'], "needs two operands", "a max with one operand"),
+    ("unknown-level-kind", ['{"il":1,"zzz":0}'], "unknown level kind", "a level node of no known kind"),
+    ("unknown-declaration-kind", ['{"zzz":{}}'], "unknown declaration kind", "a declaration of no known kind"),
+    ("not-json", ["{not json"], "not valid JSON", "a line that is not JSON"),
+    ("bad-name-entry", ['{"in":1,"zzz":{}}'], "bad name entry", "a name entry of neither shape"),
+    ("bad-level-entry", ['{"il":1}'], "bad level entry", "a level entry with no node"),
+    ("bad-expression-entry", ['{"ie":1}'], "bad expression entry", "an expression entry with no node"),
+    ("bad-line", ['{"a":1,"b":2}'], "bad line", "a line that is not a table entry or one declaration"),
+    ("second-meta-line", [m1], "second meta line", "two meta lines"),
+]:
+    add(
+        f"parse-{fname}.ndjson",
+        "\n".join([m1] + lines) + "\n",
+        "decline",
+        f"{why}: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+        msg=msg_,
+    )
+add(
+    "parse-version-3-2.ndjson",
+    json.dumps({"meta": {**Builder.META["meta"], "format": {"version": "3.2.0"}}}, separators=(",", ":")) + "\n",
+    "decline",
+    "format version 3.2.0: only 3.1.x is read.",
+    msg="is not supported",
+)
+add(
+    "parse-version-4.ndjson",
+    json.dumps({"meta": {**Builder.META["meta"], "format": {"version": "4"}}}, separators=(",", ":")) + "\n",
+    "decline",
+    "format version 4: only 3.1.x is read.",
+    msg="is not supported",
+)
+
+# unsafe inductive types, constructors and recursors are declined: no kernel check of them is made
+b = base("PUnit")
+punit_lines = b.lines[:]
+for part in ("types", "ctors", "recs"):
+    out = []
+    for ln in punit_lines:
+        o = json.loads(ln)
+        if "inductive" in o:
+            o["inductive"][part][0]["isUnsafe"] = True
+            ln = json.dumps(o, separators=(",", ":"), sort_keys=True)
+        out.append(ln)
+    add(
+        f"unsafe-inductive-{part}.ndjson",
+        "\n".join(out) + "\n",
+        "decline",
+        f"PUnit with its {part[:-1] if part != 'ctors' else 'constructor'} marked unsafe: the checker does not check unsafe "
+        "inductive declarations and says so, rather than accepting them unchecked (found by coverage).",
+        msg={"types": "unsafe inductive types", "ctors": "unsafe constructors", "recs": "unsafe recursors"}[part],
+    )
+
 
 with open(os.path.join(OUT, "manifest.json"), "w", encoding="utf-8") as f:
     json.dump(

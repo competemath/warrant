@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Every place the checker can refuse a file must be reached by some test, or be listed as unreachable with the reason.
+"""Every place the checker can refuse or decline a file must be reached by some test, or be listed as unreachable with the reason.
 
 usage: reject_coverage.py --binary PATH [--allow tools/reject_unreachable.json] DIR...
 
-The checker's refusals are `reject "..."` calls in src/*.ml. Each message is cut at its format specifiers (%s, %d, ...)
+The checker's refusals are `reject "..."` calls in src/*.ml, its declines are `decline "..."` and `malformed "..."` calls
+and `Declined "..."` values. Each message is cut at its format specifiers (%s, %d, ...)
 and the longest literal piece is the needle. The files of every DIR (a corpus with a manifest.json, as tools/arena.py
 reads) are run, and a site counts as reached when its needle occurs in the explanation of some refusal. A site no file
 reaches, and that the allow list does not explain, is a check without a test: the exit status is 1.
@@ -21,7 +22,7 @@ import re
 import subprocess
 import sys
 
-SITE = re.compile(r'\breject\s+"((?:[^"\\]|\\.)*)"', re.S)
+SITE = re.compile(r'\b(?:reject|decline|malformed|Declined)\s+"((?:[^"\\]|\\.)*)"', re.S)
 SPEC = re.compile(r"%[0-9]*[sdl]")
 
 
@@ -44,12 +45,13 @@ def explanations(binary, dirs, timeout):
             entries = json.load(f)["files"]
         for e in entries:
             path = os.path.join(root, e["path"])
+            env = {**os.environ, **e["env"]} if e.get("env") else None
             try:
                 if path.endswith(".gz"):
                     with gzip.open(path, "rb") as f:
-                        p = subprocess.run([binary, "-"], input=f.read(), capture_output=True, timeout=timeout)
+                        p = subprocess.run([binary, "-"], input=f.read(), capture_output=True, timeout=timeout, env=env)
                 else:
-                    p = subprocess.run([binary, path], capture_output=True, timeout=timeout)
+                    p = subprocess.run([binary, path], capture_output=True, timeout=timeout, env=env)
             except subprocess.TimeoutExpired:
                 continue
             seen.append(p.stderr.decode("utf-8", "replace"))

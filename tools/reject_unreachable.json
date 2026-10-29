@@ -128,5 +128,10 @@
   "file": "src/tc.ml",
   "needle": "evidence from another environment",
   "why": "internal invariant: no input reaches it (free variables are made by the checker; closed terms are required before inference; a projection's structure type has exactly its parameters because it has no indices)"
+ },
+ {
+  "file": "src/check.ml",
+  "needle": "out of memory",
+  "why": "OCaml raises Out_of_memory when the system refuses an allocation; no input of bounded size triggers it portably (the size limits on Nat.pow and Nat.shiftLeft decline before they allocate). The handler is the last line behind those limits."
  }
 ]

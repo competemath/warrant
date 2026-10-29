@@ -137,7 +137,16 @@ let env st = st.env
 (* Work budget: a file that makes the checker diverge is declined, never accepted. *)
 let fuel = ref 0
 let trace = Sys.getenv_opt "WARRANT_TRACE" <> None
-let default_fuel = 400_000_000
+
+(* The two limits below can be lowered from the environment, for the tests only: a smaller budget turns accepts into
+   declines and never the other way round, and a smaller cache limit only makes the caches be emptied more often (a run
+   under WARRANT_CACHE_LIMIT=0 must give the same verdicts as a normal one). *)
+let env_limit name default =
+  match Option.bind (Sys.getenv_opt name) int_of_string_opt with
+  | Some n when n >= 0 -> min n default
+  | _ -> default
+
+let default_fuel = env_limit "WARRANT_FUEL" 400_000_000
 
 let tick () =
   decr fuel;
@@ -1066,7 +1075,7 @@ let check_prop st (t : Evidence.Is_type.t) =
   else None
 
 (* between declarations: no free variable survives, so neither does anything cached about one *)
-let cache_limit = 3_000_000
+let cache_limit = env_limit "WARRANT_CACHE_LIMIT" 3_000_000
 
 let end_decl () =
   Hashtbl.reset lctx;
