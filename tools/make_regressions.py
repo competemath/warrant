@@ -1098,9 +1098,9 @@ add(
 head = json.dumps(META, separators=(",", ":"))
 add(
     "blank-lines.ndjson",
-    head + "\n\n" + '{"in":1,"str":{"pre":0,"str":"x"}}\n\n',
+    head + "\n\n" + '{"in":1,"str":{"pre":0,"str":"x"}}\n',
     "accept",
-    "empty lines between records are skipped.",
+    "an empty line between records is skipped.",
 )
 
 # structure eta compares every field

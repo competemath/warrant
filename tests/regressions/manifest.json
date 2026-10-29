@@ -435,7 +435,7 @@
   {
    "path": "blank-lines.ndjson",
    "expect": "accept",
-   "why": "empty lines between records are skipped."
+   "why": "an empty line between records is skipped."
   },
   {
    "path": "eta-struct-first-field-differs.ndjson",
