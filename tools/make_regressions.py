@@ -3071,6 +3071,95 @@ add(
     msg="application type mismatch",
 )
 
+# The fields of every object are exactly those of the format (found by the fuzzer: files with a field missing or of the wrong kind in a
+# place nobody reads were accepted, and another checker refused them)
+m1s = json.dumps(Builder.META, separators=(",", ":"))
+n1 = '{"in":1,"str":{"pre":0,"str":"x"}}'
+lv = '{"il":1,"succ":0}\n{"ie":0,"sort":0}\n{"ie":1,"const":{"name":1,"us":[]}}'
+for fname, meta, lines, msg_ in [
+    (
+        "meta-without-exporter-version",
+        {"meta": {**Builder.META["meta"], "exporter": {"name": "forge"}}},
+        [],
+        "meta.exporter",
+    ),
+    ("meta-with-an-extra-field", {"meta": {**Builder.META["meta"], "extra": 1}}, [], "meta"),
+    (
+        "meta-lean-version-not-a-string",
+        {"meta": {**Builder.META["meta"], "lean": {"githash": "0", "version": 4}}},
+        [],
+        "expected a string",
+    ),
+    (
+        "binder-without-a-name",
+        None,
+        [n1, lv, '{"ie":2,"lam":{"binderInfo":"default","body":0,"type":0}}'],
+        "lam: the fields must be exactly",
+    ),
+    (
+        "binder-name-not-defined",
+        None,
+        [n1, lv, '{"ie":2,"lam":{"binderInfo":"default","body":0,"name":77,"type":0}}'],
+        "",
+    ),
+    (
+        "binder-info-unknown",
+        None,
+        [n1, lv, '{"ie":2,"lam":{"binderInfo":"weird","body":0,"name":1,"type":0}}'],
+        "unknown binder info",
+    ),
+    (
+        "application-with-an-extra-field",
+        None,
+        [n1, lv, '{"ie":2,"app":{"arg":0,"fn":0,"x":1}}'],
+        "app: the fields must be exactly",
+    ),
+    (
+        "let-nondep-not-a-boolean",
+        None,
+        [n1, lv, '{"ie":2,"letE":{"body":0,"name":1,"nondep":"no","type":0,"value":0}}'],
+        "expected a boolean",
+    ),
+    (
+        "axiom-with-an-extra-field",
+        None,
+        [n1, lv, '{"axiom":{"extra":0,"isUnsafe":false,"levelParams":[],"name":1,"type":0}}'],
+        "axiom: the fields must be exactly",
+    ),
+    (
+        "axiom-without-unsafe-flag",
+        None,
+        [n1, lv, '{"axiom":{"levelParams":[],"name":1,"type":0}}'],
+        "axiom: the fields must be exactly",
+    ),
+    (
+        "def-with-unknown-safety",
+        None,
+        [n1, lv, '{"def":{"all":[1],"hints":"abbrev","levelParams":[],"name":1,"safety":"maybe","type":0,"value":0}}'],
+        "unknown safety",
+    ),
+    (
+        "def-all-names-nothing-defined",
+        None,
+        [n1, lv, '{"def":{"all":[99],"hints":"abbrev","levelParams":[],"name":1,"safety":"safe","type":0,"value":0}}'],
+        "",
+    ),
+    (
+        "name-entry-with-an-extra-field",
+        None,
+        ['{"in":1,"str":{"extra":1,"pre":0,"str":"x"}}'],
+        "name: the fields must be exactly",
+    ),
+]:
+    head_ = json.dumps(meta, separators=(",", ":")) if meta else m1s
+    add(
+        f"strict-{fname}.ndjson",
+        "\n".join([head_] + lines) + "\n",
+        "decline" if msg_ != "" else "reject",
+        "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+        msg=msg_ or None,
+    )
+
 # the checker's own work budget and its caches
 b = Builder.extending(prims)
 b.axiom("T", [], ("pi", NAT, ("sort", ONE)))
@@ -3141,7 +3230,7 @@ m1 = json.dumps(Builder.META, separators=(",", ":"))
 okname = '{"in":1,"str":{"pre":0,"str":"a"}}'
 oksort = '{"il":1,"succ":0}\n{"ie":0,"sort":0}'
 for fname, lines, msg_, why in [
-    ("missing-field", ['{"ie":1,"app":{"fn":0}}'], "missing field arg", "an application without its argument"),
+    ("missing-field", ['{"ie":1,"mdata":{"data":[]}}'], "missing field expr", "a metadata node without its expression"),
     (
         "not-an-integer",
         ['{"in":"x","str":{"pre":0,"str":"a"}}'],

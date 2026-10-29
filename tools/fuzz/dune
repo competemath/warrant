@@ -1,0 +1,6 @@
+; The fuzzer needs bisect_ppx (an opam package that is not a dependency of WARRANT): without it this directory builds nothing.
+
+(executable
+ (name fuzz)
+ (optional)
+ (libraries warrant yojson unix bisect_ppx.common bisect_ppx.runtime))

@@ -1535,6 +1535,82 @@
    "msg": "application type mismatch"
   },
   {
+   "path": "strict-meta-without-exporter-version.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "meta.exporter"
+  },
+  {
+   "path": "strict-meta-with-an-extra-field.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "meta"
+  },
+  {
+   "path": "strict-meta-lean-version-not-a-string.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "expected a string"
+  },
+  {
+   "path": "strict-binder-without-a-name.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "lam: the fields must be exactly"
+  },
+  {
+   "path": "strict-binder-name-not-defined.ndjson",
+   "expect": "reject",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through."
+  },
+  {
+   "path": "strict-binder-info-unknown.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "unknown binder info"
+  },
+  {
+   "path": "strict-application-with-an-extra-field.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "app: the fields must be exactly"
+  },
+  {
+   "path": "strict-let-nondep-not-a-boolean.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "expected a boolean"
+  },
+  {
+   "path": "strict-axiom-with-an-extra-field.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "axiom: the fields must be exactly"
+  },
+  {
+   "path": "strict-axiom-without-unsafe-flag.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "axiom: the fields must be exactly"
+  },
+  {
+   "path": "strict-def-with-unknown-safety.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "unknown safety"
+  },
+  {
+   "path": "strict-def-all-names-nothing-defined.ndjson",
+   "expect": "reject",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through."
+  },
+  {
+   "path": "strict-name-entry-with-an-extra-field.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "name: the fields must be exactly"
+  },
+  {
    "path": "work-budget-exhausted.ndjson.gz",
    "expect": "decline",
    "why": "the same file as nat-log2-literal, run with a work budget of 10 steps (WARRANT_FUEL): the checker declines and says why. With its normal budget (400 million steps) the file is accepted. A budget can turn an accept into a decline, never a decline into an accept.",
@@ -1560,8 +1636,8 @@
   {
    "path": "parse-missing-field.ndjson",
    "expect": "decline",
-   "why": "an application without its argument: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
-   "msg": "missing field arg"
+   "why": "a metadata node without its expression: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+   "msg": "missing field expr"
   },
   {
    "path": "parse-not-an-integer.ndjson",
