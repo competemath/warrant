@@ -35,6 +35,8 @@ def renumber(o, kind_of_line, f):
         out = {}
         for k, v in o.items():
             if k in ("in", "il", "ie") and isinstance(v, int):
+                if v < 0:
+                    raise ValueError("a negative index: the file is about exactly that")
                 out[k] = f[{"in": "name", "il": "level", "ie": "expr"}[k]](v)
             elif k in NAME_KEYS and isinstance(v, int) and not isinstance(v, bool):
                 out[k] = f["name"](v)

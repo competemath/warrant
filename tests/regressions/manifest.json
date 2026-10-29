@@ -1611,6 +1611,24 @@
    "msg": "mdata: the fields must be expr and data"
   },
   {
+   "path": "strict-negative-expression-index.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "expected a natural number"
+  },
+  {
+   "path": "strict-negative-level-index.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "expected a natural number"
+  },
+  {
+   "path": "strict-negative-name-index.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "expected a natural number"
+  },
+  {
    "path": "strict-name-entry-with-an-extra-field.ndjson",
    "expect": "decline",
    "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
@@ -1648,7 +1666,7 @@
   {
    "path": "parse-not-an-integer.ndjson",
    "expect": "decline",
-   "why": "a name index that is a string: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+   "why": "a reference to a level that is a string: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
    "msg": "expected an integer"
   },
   {

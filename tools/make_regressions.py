@@ -3150,6 +3150,9 @@ for fname, meta, lines, msg_ in [
         [n1, lv, '{"ie":2,"mdata":{"data":[],"expr":0,"x":1}}'],
         "mdata: the fields must be expr and data",
     ),
+    ("negative-expression-index", None, [n1, lv, '{"ie":-1,"sort":0}'], "expected a natural number"),
+    ("negative-level-index", None, [n1, '{"il":-5,"succ":0}'], "expected a natural number"),
+    ("negative-name-index", None, ['{"in":-1,"str":{"pre":0,"str":"x"}}'], "expected a natural number"),
     (
         "name-entry-with-an-extra-field",
         None,
@@ -3239,9 +3242,9 @@ for fname, lines, msg_, why in [
     ("missing-field", ['{"ie":1,"mdata":{"data":[]}}'], "missing field expr", "a metadata node without its expression"),
     (
         "not-an-integer",
-        ['{"in":"x","str":{"pre":0,"str":"a"}}'],
+        ['{"ie":0,"sort":"x"}'],
         "expected an integer",
-        "a name index that is a string",
+        "a reference to a level that is a string",
     ),
     (
         "not-a-boolean",

@@ -344,7 +344,7 @@ let line p (s : string) : item =
   | _ -> (
       match (List.assoc_opt "in" o, List.assoc_opt "il" o, List.assoc_opt "ie" o) with
       | Some i, _, _ -> (
-          let i = to_int i in
+          let i = to_nat i in
           match List.filter (fun (k, _) -> k <> "in") o with
           | [ ("str", v) ] ->
               let v = to_obj v in
@@ -358,14 +358,14 @@ let line p (s : string) : item =
               Table_entry
           | _ -> malformed "bad name entry")
       | _, Some i, _ -> (
-          let i = to_int i in
+          let i = to_nat i in
           match List.filter (fun (k, _) -> k <> "il") o with
           | [ (kind, v) ] ->
               define p.levels "level" i (parse_level p kind v);
               Table_entry
           | _ -> malformed "bad level entry")
       | _, _, Some i -> (
-          let i = to_int i in
+          let i = to_nat i in
           match List.filter (fun (k, _) -> k <> "ie") o with
           | [ (kind, v) ] ->
               define p.exprs "expression" i (Expr.permanently (fun () -> parse_expr p kind v));

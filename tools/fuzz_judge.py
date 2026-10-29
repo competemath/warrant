@@ -28,14 +28,28 @@ def warrant(binary, path, timeout):
 
 
 def other(cmd, path, timeout):
+    """accept, reject (the checker found something wrong), or undecided (the file is not in the shape the other checker reads: it
+    declines non-continuous numbering, wants other fields, or fails to parse)"""
     try:
         p = subprocess.run(
             cmd.replace("{file}", shlex.quote(path)), shell=True, capture_output=True, timeout=timeout, check=False
         )
     except subprocess.TimeoutExpired:
         return "timeout", ""
-    out = (p.stderr or p.stdout).decode("utf-8", "replace").strip().splitlines()
-    return ("accept" if p.returncode == 0 else "reject"), (out[-1][:140] if out else "")
+    text = (p.stderr + p.stdout).decode("utf-8", "replace")
+    lines = [ln for ln in text.strip().splitlines() if ln.strip() and "RUST_BACKTRACE" not in ln]
+    last = lines[-1][:140] if lines else ""
+    if p.returncode == 0:
+        return "accept", last
+    if (
+        "Declined:" in text
+        or text.lstrip().startswith("Error:")
+        or "run with `-h`" in text
+        or "invalid type" in text
+        or "missing field" in text
+    ):
+        return "undecided", last
+    return "reject", last
 
 
 def main():
@@ -46,18 +60,21 @@ def main():
     ap.add_argument("dirs", nargs="+")
     args = ap.parse_args()
     bad = 0
+    undecided = 0
     n = 0
     for d in args.dirs:
         for path in sorted(glob.glob(os.path.join(d, "**", "*.ndjson"), recursive=True)):
             n += 1
             w, wm = warrant(args.binary, path, args.timeout)
             o, om = other(args.other, path, args.timeout)
-            if w == "accept" and o == "reject":
+            if o == "undecided":
+                undecided += 1
+            elif w == "accept" and o == "reject":
                 bad += 1
                 print(f"ACCEPTED-ONLY-BY-WARRANT {path}\n    other: {om}", flush=True)
             elif w == "reject" and o == "accept":
                 print(f"REFUSED-ONLY-BY-WARRANT {path}\n    warrant: {wm}", flush=True)
-    print(f"{n} files, {bad} accepted only by WARRANT")
+    print(f"{n} files, {bad} accepted only by WARRANT, {undecided} the other checker could not read")
     return 1 if bad else 0
 
 
