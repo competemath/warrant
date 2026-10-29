@@ -196,7 +196,7 @@ class Builder:
             }
         )
 
-    def definition(self, name, lparams, ty, val, hints="abbrev"):
+    def definition(self, name, lparams, ty, val, hints="abbrev", safety="safe"):
         self._emit(
             {
                 "def": {
@@ -205,7 +205,7 @@ class Builder:
                     "type": self.expr(ty),
                     "value": self.expr(val),
                     "hints": ({"regular": 1} if hints == "regular" else hints),
-                    "safety": "safe",
+                    "safety": safety,
                     "all": [self.name(name)],
                 }
             }

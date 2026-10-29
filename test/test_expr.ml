@@ -105,6 +105,44 @@ let prop_exists_const =
          = List.exists (fun x -> x == n) (true_consts with_d)
       && E.exists_const (fun x -> x == n) e = List.exists (fun x -> x == n) (true_consts e))
 
+(* instantiate_rev against a plain recursive substitution, on terms with loose variables beyond the substituted ones and
+   substitutes that have loose variables of their own *)
+let rec lift (e : E.t) d c =
+  match e.node with
+  | E.BVar i -> if i >= c then E.bvar (i + d) else e
+  | E.App (a, b) -> E.app (lift a d c) (lift b d c)
+  | E.Lam (a, b) -> E.lam (lift a d c) (lift b d (c + 1))
+  | E.Pi (a, b) -> E.pi (lift a d c) (lift b d (c + 1))
+  | E.Let (t, v, b) -> E.let_ (lift t d c) (lift v d c) (lift b d (c + 1))
+  | E.Proj (s, i, x) -> E.proj s i (lift x d c)
+  | _ -> e
+
+let rec ref_inst (e : E.t) off (subst : E.t array) : E.t =
+  let n = Array.length subst in
+  match e.node with
+  | E.BVar i ->
+      if i < off then e
+      else if i - off < n then lift subst.(n - 1 - (i - off)) off 0
+      else E.bvar (i - n)
+  | E.App (a, b) -> E.app (ref_inst a off subst) (ref_inst b off subst)
+  | E.Lam (a, b) -> E.lam (ref_inst a off subst) (ref_inst b (off + 1) subst)
+  | E.Pi (a, b) -> E.pi (ref_inst a off subst) (ref_inst b (off + 1) subst)
+  | E.Let (t, v, b) ->
+      E.let_ (ref_inst t off subst) (ref_inst v off subst) (ref_inst b (off + 1) subst)
+  | E.Proj (s, i, x) -> E.proj s i (ref_inst x off subst)
+  | _ -> e
+
+let prop_instantiate_rev =
+  let open QCheck.Gen in
+  QCheck.Test.make ~count:3000 ~name:"instantiate_rev agrees with a plain substitution"
+    (QCheck.make
+       ~print:(fun (e, l) ->
+         E.to_string e ^ " [" ^ String.concat "; " (List.map E.to_string l) ^ "]")
+       (pair (gen_expr 4) (list_size (int_range 1 3) (gen_expr 1))))
+    (fun (e, l) ->
+      let subst = Array.of_list l in
+      E.instantiate_rev e subst == ref_inst e 0 subst)
+
 (* abstracting then instantiating the same free variables gives the term back *)
 let prop_roundtrip =
   QCheck.Test.make ~count:2000 ~name:"instantiate_rev (abstract e ids) fvars = e"
@@ -141,5 +179,6 @@ let () =
             prop_for_all_fvars;
             prop_has_loose_bvar;
             prop_exists_const;
+            prop_instantiate_rev;
           ] );
     ]

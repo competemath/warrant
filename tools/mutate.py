@@ -113,12 +113,28 @@ def main():
     ap.add_argument(
         "--shard", default="0/1", help="K/N: take every N-th mutant starting at K (to run N copies side by side)"
     )
+    ap.add_argument(
+        "--only",
+        default=None,
+        help="JSON list of {file, context, from, to}: try just these (survivors of an earlier run)",
+    )
     ap.add_argument("--fast", action="store_true", help="first stage only on the arena's bad files and the regressions")
     args = ap.parse_args()
     work = pathlib.Path(args.work)
     cands = []
     for f in args.files:
         cands += candidates(work / f)
+    if args.only:
+        wanted = {
+            (w["file"], w["context"], w["from"], w["to"]) for w in json.loads(pathlib.Path(args.only).read_text())
+        }
+
+        def key(c):
+            path, a, b, rep, lineno = c
+            text = pathlib.Path(path).read_text(encoding="utf-8")
+            return (str(pathlib.Path(path).relative_to(work)), text.splitlines()[lineno - 1].strip(), text[a:b], rep)
+
+        cands = [c for c in cands if key(c) in wanted]
     random.Random(args.seed).shuffle(cands)
     shard, shards = (int(x) for x in args.shard.split("/"))
     cands = [c for k, c in enumerate(cands) if k % shards == shard]

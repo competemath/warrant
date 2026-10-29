@@ -1044,6 +1044,65 @@ add(
     msg="the value does not have the declared type",
 )
 
+# two applications of one definition to different arguments are different when the definition keeps them apart
+b = base("Nat", "Nat.succ", "Eq", "Eq.refl")
+b.axiom("a", [], NAT)
+b.axiom("b", [], NAT)
+b.definition("f", [], ("pi", NAT, NAT), ("lam", NAT, nat_succ(("bvar", 0))), hints="regular")
+fa, fb = _app(("const", "f", []), ("const", "a", [])), _app(("const", "f", []), ("const", "b", []))
+b.theorem("t", [], eq_nat(fa, fb), refl_nat(fa))
+add(
+    "same-definition-different-arguments.ndjson",
+    b.text(),
+    "reject",
+    "f a = f b for f := fun x => Nat.succ x and two unknown naturals a b. The lazy comparison first tries the arguments, and "
+    "when they differ it unfolds both sides; a mutation that made the failed argument comparison count as success accepted this.",
+    msg="the value does not have the declared type",
+)
+
+# a definition marked unsafe or partial is unusable by a safe declaration (the parser reads the safety field)
+for safety in ("unsafe", "partial"):
+    b = base("Nat", "Nat.zero")
+    b.definition("u", [], NAT, N_ZERO, hints="regular", safety=safety)
+    b.definition("d", [], NAT, ("const", "u", []), hints="regular")
+    refuse(
+        f"{safety}-definition-used-by-safe.ndjson".removesuffix(".ndjson"),
+        b.text(),
+        f'u is a definition with safety "{safety}" and a safe definition uses it. Only the exact word safe makes a definition '
+        "safe; a mutation that read every other value as safe accepted this.",
+        "unsafe or partial",
+    )
+
+# an unsafe declaration may mention other unsafe constants in its type
+b = Builder()
+b.axiom("U1", [], ("sort", ONE), unsafe=True)
+b.axiom("U2", [], ("const", "U1", []), unsafe=True)
+add(
+    "unsafe-axiom-mentions-unsafe.ndjson",
+    b.text(),
+    "accept",
+    "unsafe axioms U1 : Type and U2 : U1. The type of an unsafe declaration is checked with unsafe constants allowed.",
+)
+b = Builder()
+b.axiom("U1", [], ("sort", ONE), unsafe=True)
+b.axiom("u1", [], ("const", "U1", []), unsafe=True)
+b.definition("D2", [], ("const", "U1", []), ("const", "u1", []), hints="regular", safety="unsafe")
+add(
+    "unsafe-definition-mentions-unsafe.ndjson",
+    b.text(),
+    "accept",
+    "an unsafe definition whose type is an unsafe constant: its type is checked with unsafe constants allowed.",
+)
+
+# blank lines between records
+head = json.dumps(META, separators=(",", ":"))
+add(
+    "blank-lines.ndjson",
+    head + "\n\n" + '{"in":1,"str":{"pre":0,"str":"x"}}\n\n',
+    "accept",
+    "empty lines between records are skipped.",
+)
+
 # a mutual block whose types take different parameters
 b = Builder()
 b.inductive(

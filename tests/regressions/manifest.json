@@ -405,6 +405,39 @@
    "msg": "the value does not have the declared type"
   },
   {
+   "path": "same-definition-different-arguments.ndjson",
+   "expect": "reject",
+   "why": "f a = f b for f := fun x => Nat.succ x and two unknown naturals a b. The lazy comparison first tries the arguments, and when they differ it unfolds both sides; a mutation that made the failed argument comparison count as success accepted this.",
+   "msg": "the value does not have the declared type"
+  },
+  {
+   "path": "unsafe-definition-used-by-safe.ndjson",
+   "expect": "reject",
+   "why": "u is a definition with safety \"unsafe\" and a safe definition uses it. Only the exact word safe makes a definition safe; a mutation that read every other value as safe accepted this.",
+   "msg": "unsafe or partial"
+  },
+  {
+   "path": "partial-definition-used-by-safe.ndjson",
+   "expect": "reject",
+   "why": "u is a definition with safety \"partial\" and a safe definition uses it. Only the exact word safe makes a definition safe; a mutation that read every other value as safe accepted this.",
+   "msg": "unsafe or partial"
+  },
+  {
+   "path": "unsafe-axiom-mentions-unsafe.ndjson",
+   "expect": "accept",
+   "why": "unsafe axioms U1 : Type and U2 : U1. The type of an unsafe declaration is checked with unsafe constants allowed."
+  },
+  {
+   "path": "unsafe-definition-mentions-unsafe.ndjson",
+   "expect": "accept",
+   "why": "an unsafe definition whose type is an unsafe constant: its type is checked with unsafe constants allowed."
+  },
+  {
+   "path": "blank-lines.ndjson",
+   "expect": "accept",
+   "why": "empty lines between records are skipped."
+  },
+  {
    "path": "mutual-different-parameters.ndjson",
    "expect": "reject",
    "why": "A and B are declared together but A takes a parameter of type Sort 1 and B one of type Sort 0. All types of a mutual block share their parameters; a mutation that inverted the comparison accepted exactly this.",
