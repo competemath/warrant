@@ -38,26 +38,23 @@ let admit_item env (item : Parser.item) =
                 (trunc (Expr.to_string ty))
         in
         Env.add_def env name lparams ~hints ~ty:ty_ev ~value:val_ev ~conv
-  | Parser.Opaque { name; lparams; ty; value; unsafe } ->
-      if unsafe then
-        Env.add_unsafe env name lparams (Tc.check_type (Tc.make ~allow_unsafe:true env lparams) ty)
-      else
-        let st = Tc.make env lparams in
-        let ty_ev = Tc.check_type st ty in
-        let val_ev = Tc.check_typing st value in
-        let conv =
-          match Tc.check_conv st val_ev ty with
-          | Some c -> c
-          | None ->
-              reject
-                "opaque %s: the value does not have the declared type\n\
-                \ value has: %s\n\
-                \ declared:  %s"
-                (Name.to_string name)
-                (trunc (Expr.to_string val_ev.ty))
-                (trunc (Expr.to_string ty))
-        in
-        Env.add_opaque env name lparams ~ty:ty_ev ~value:val_ev ~conv
+  | Parser.Opaque { name; lparams; ty; value; unsafe = _ } ->
+      (* The official kernel (environment::add_opaque) checks an opaque constant with a safe type checker whether or not
+         the constant is marked unsafe: type and value are both checked, and neither may mention an unsafe constant. *)
+      let st = Tc.make env lparams in
+      let ty_ev = Tc.check_type st ty in
+      let val_ev = Tc.check_typing st value in
+      let conv =
+        match Tc.check_conv st val_ev ty with
+        | Some c -> c
+        | None ->
+            reject
+              "opaque %s: the value does not have the declared type\n value has: %s\n declared:  %s"
+              (Name.to_string name)
+              (trunc (Expr.to_string val_ev.ty))
+              (trunc (Expr.to_string ty))
+      in
+      Env.add_opaque env name lparams ~ty:ty_ev ~value:val_ev ~conv
   | Parser.Thm { name; lparams; ty; value } ->
       announce "thm" name;
       let st = Tc.make env lparams in
@@ -95,21 +92,21 @@ let run ?(on_decl = fun (_ : int) -> ()) ?(on_env = fun (_ : Env.t) -> ()) (ic :
     (try
        while true do
          let l = input_line ic in
-         if String.length l > 0 then begin
-           Tc.fuel := Tc.default_fuel;
-           let item = Parser.line p l in
-           (* the first line must state the format: a file that does not is not an export *)
-           (match item with
-           | Parser.Meta -> if !seen_meta then decline "a second meta line" else seen_meta := true
-           | _ -> if not !seen_meta then decline "the file does not start with the meta line");
-           (match item with
-           | Parser.Meta | Parser.Table_entry -> ()
-           | _ ->
-               incr count;
-               on_decl !count);
-           admit_item env item;
-           Tc.end_decl ()
-         end
+         (* every line holds one record: an empty line is not valid JSON and is refused like any other bad line (the
+            official checker, nanoda and sokonanoda refuse it too) *)
+         Tc.fuel := Tc.default_fuel;
+         let item = Parser.line p l in
+         (* the first line must state the format: a file that does not is not an export *)
+         (match item with
+         | Parser.Meta -> if !seen_meta then decline "a second meta line" else seen_meta := true
+         | _ -> if not !seen_meta then decline "the file does not start with the meta line");
+         (match item with
+         | Parser.Meta | Parser.Table_entry -> ()
+         | _ ->
+             incr count;
+             on_decl !count);
+         admit_item env item;
+         Tc.end_decl ()
        done
      with End_of_file -> ());
     if not !seen_meta then decline "empty file: no meta line";

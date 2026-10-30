@@ -80,11 +80,12 @@ def variant(text, kind, rng):
         "expr": lambda i: i * 7 + 3,
     }
     out = []
-    for line in text.split("\n"):
+    lines = text.split("\n")
+    if lines[-1] == "":
+        lines.pop()  # the end of the last line
+    for line in lines:
         if not line.strip():
-            if kind == "renumber":
-                out.append(line)  # a blank line is skipped; one made of a carriage return only is not (declined)
-            continue
+            raise ValueError("a blank line: the file is about exactly that")
         o = json.loads(line, object_pairs_hook=no_duplicates)
         if kind in ("renumber", "both") and "meta" not in o:
             o = renumber(o, None, maps)
