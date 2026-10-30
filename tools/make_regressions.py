@@ -31,6 +31,9 @@ files = []
 
 
 def add(name, text, expect, why, msg=None, may_decline=False, env=None):
+    # an empty line is not a record and the checker refuses it: only the file about exactly that may have one
+    if text.strip() and name != "blank-lines.ndjson" and not all(ln.strip() for ln in text.rstrip("\n").split("\n")):
+        raise SystemExit(f"{name}: has an empty line")
     if text.strip():
         text = text.rstrip("\n") + "\n"  # one final newline: the end-of-file hook would make it so
     if (
@@ -638,10 +641,10 @@ add(
     b.text(),
     "reject",
     'String.ofList is an axiom Nat -> String here and the file compares the literal "a" with String.ofList 5. A literal expands '
-    "through the file's own String.ofList only when it has type List Char -> String (there is no String.mk here either), so the "
+    "through the file's own String.ofList only when it has type List Char -> String, so the "
     "comparison has no meaning and is refused for that reason; a mutation that accepted the constant when either its universe "
     "parameters or its type fit expanded the literal anyway and failed later, for another reason.",
-    msg="string literal: the environment has no String.ofList or String.mk of type List Char -> String",
+    msg="string literal: the environment has no String.ofList of type List Char -> String",
 )
 
 
@@ -1111,8 +1114,11 @@ head = json.dumps(META, separators=(",", ":"))
 add(
     "blank-lines.ndjson",
     head + "\n\n" + '{"in":1,"str":{"pre":0,"str":"x"}}\n',
-    "accept",
-    "an empty line between records is skipped.",
+    "reject",
+    "an empty line between records: every line is one record, and an empty line is not valid JSON. The official checker, nanoda "
+    "and sokonanoda refuse the file for that reason (the panel run of 2026-10-29); WARRANT used to skip such lines.",
+    msg="not valid JSON",
+    may_decline=True,
 )
 
 # structure eta compares every field
@@ -1743,24 +1749,27 @@ for name, cps, expect in [
         'String.ofList [..] against the literal "ab": the expansion also happens when the application is on the left.',
         msg=DEFEQ_MSG if expect == "reject" else None,
     )
-for name, cps, expect in [("string-mk-literal", [97, 98], "accept"), ("string-mk-literal-wrong", [97, 99], "reject")]:
-    b = base("Char", "Nat", "List", "List.nil", "List.cons", "Eq", "Eq.refl", "Char.ofNat")
-    b.axiom("String", [], ("sort", ONE))
-    b.axiom("String.mk", [], ("pi", ("app", ("const", "List", [0]), CHAR), STRING))
-    b.theorem(
-        "t",
-        [],
-        _app(("const", "Eq", [ONE]), STRING, ("str", "ab"), _app(("const", "String.mk", []), chars(cps))),
-        _app(("const", "Eq.refl", [ONE]), STRING, ("str", "ab")),
-    )
-    add(
-        name + ".ndjson",
-        b.text(),
-        expect,
-        'A toolchain whose String has the constructor String.mk (and no String.ofList): the literal "ab" is String.mk '
-        "[a, b]. Found by mutation testing: nothing used the older name.",
-        msg=DEFEQ_MSG if expect == "reject" else None,
-    )
+# String.mk, the name older toolchains' kernels expanded a literal through, is not accepted: the official kernel (4.29 and
+# 4.34 alike) expands through String.ofList only, and refuses this file
+b = base("Char", "Nat", "List", "List.nil", "List.cons", "Eq", "Eq.refl", "Char.ofNat")
+b.axiom("String", [], ("sort", ONE))
+b.axiom("String.mk", [], ("pi", ("app", ("const", "List", [0]), CHAR), STRING))
+b.theorem(
+    "t",
+    [],
+    _app(("const", "Eq", [ONE]), STRING, ("str", "ab"), _app(("const", "String.mk", []), chars([97, 98]))),
+    _app(("const", "Eq.refl", [ONE]), STRING, ("str", "ab")),
+)
+add(
+    "string-mk-literal.ndjson",
+    b.text(),
+    "reject",
+    'A String with the constructor String.mk and no String.ofList: the literal "ab" would be String.mk [a, b] in the kernel of '
+    "an older toolchain. The official kernel of Lean 4.29 and of 4.34 expands literals through String.ofList only and refuses this "
+    "file (the panel run of 2026-10-29: official, lazylean, tenet, kiota, nanoda and sokonanoda all refuse it); WARRANT accepted "
+    "it before and does not any more.",
+    msg=DEFEQ_MSG,
+)
 
 # the auxiliary type made for a nested occurrence takes a name no declaration has
 b = base("Nat", "List", "List.nil", "List.cons")
@@ -1887,7 +1896,7 @@ def without_quot(target, kinds_removed):
         cut = slice_lines(f, [target, "Eq", "Eq.refl"])
     kept = [ln for ln in cut if not ('"quot"' in ln and json.loads(ln)["quot"]["kind"] in kinds_removed)]
     assert len(kept) == len(cut) - len(kinds_removed), (target, kinds_removed)
-    return "\n".join(kept) + "\n"
+    return "".join(kept)  # the lines of a slice end with a newline
 
 
 for target, removed, needs, why in [
@@ -1908,7 +1917,7 @@ with open(PRELUDE_PATH, encoding="utf-8") as f:
 if not any('"quot"' in ln and json.loads(ln)["quot"]["kind"] == "ctor" for ln in lift_cut):
     add(
         "quot-lift-without-ctor.ndjson",
-        "\n".join(lift_cut) + "\n",
+        "".join(lift_cut),  # the lines of a slice end with a newline
         "reject",
         "Quot.lift declared with Quot but without Quot.mk (the cut of Quot.lift from a real export has no Quot.mk): the lift rule "
         "computes on Quot.mk, so it is needed first.",
@@ -2502,23 +2511,24 @@ add(
     msg="invalid return type",
 )
 
-# String.mk with a universe parameter is not the constructor a literal expands through
+# String.ofList with a universe parameter is not the function a literal expands through
 b = base("Char", "Nat", "List", "List.nil", "List.cons", "Eq", "Eq.refl", "Char.ofNat")
 b.axiom("String", [], ("sort", ONE))
-b.axiom("String.mk", ["u"], ("pi", ("app", ("const", "List", [0]), CHAR), STRING))
+b.axiom("String.ofList", ["u"], ("pi", ("app", ("const", "List", [0]), CHAR), STRING))
 b.theorem(
     "t",
     [],
-    _app(("const", "Eq", [ONE]), STRING, ("str", "ab"), _app(("const", "String.mk", [0]), chars([97, 98]))),
+    _app(("const", "Eq", [ONE]), STRING, ("str", "ab"), _app(("const", "String.ofList", [0]), chars([97, 98]))),
     _app(("const", "Eq.refl", [ONE]), STRING, ("str", "ab")),
 )
 add(
-    "string-mk-with-universe-parameter.ndjson",
+    "string-of-list-with-universe-parameter.ndjson",
     b.text(),
     "reject",
-    "String.mk.{u} : List Char -> String, with a universe parameter it does not use: a literal would expand to String.mk without "
-    "levels, which is not that constant, so the environment has no usable constructor for string literals (found by mutation testing).",
-    msg="string literal: the environment has no String.ofList or String.mk",
+    "String.ofList.{u} : List Char -> String, with a universe parameter it does not use: a literal would expand to String.ofList "
+    "without levels, which is not that constant, so the environment has no usable function for string literals (found by mutation "
+    "testing).",
+    msg="string literal: the environment has no String.ofList of type List Char -> String",
 )
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -2550,23 +2560,38 @@ add(
     msg="application type mismatch",
 )
 
-# an unsafe opaque constant is recorded by its type; its value is not looked at
+
+# an unsafe opaque constant is checked like a safe one: the official kernel (environment::add_opaque) uses a safe type checker
+# for every opaque constant, so its type and its value must be well typed and may not mention unsafe constants
+def unsafe_opaque(b):
+    out = []
+    for ln in b.lines:
+        o = json.loads(ln)
+        if "opaque" in o:
+            o["opaque"]["isUnsafe"] = True
+            ln = json.dumps(o, separators=(",", ":"), sort_keys=True)
+        out.append(ln)
+    return "\n".join(out) + "\n"
+
+
 b = base("Nat", "Bool", "Bool.true")
 b.opaque("o", [], ("const", "Bool", []), ("const", "Nat.zero", []))
-unsafe_lines = []
-for ln in b.lines:
-    o = json.loads(ln)
-    if "opaque" in o:
-        o["opaque"]["isUnsafe"] = True
-        ln = json.dumps(o, separators=(",", ":"), sort_keys=True)
-    unsafe_lines.append(ln)
 add(
     "unsafe-opaque-value-not-checked.ndjson",
-    "\n".join(unsafe_lines) + "\n",
+    unsafe_opaque(b),
+    "reject",
+    "unsafe opaque o : Bool := Nat.zero: the value has the wrong type. The official kernel checks the value of an opaque constant "
+    "whether or not it is marked unsafe (environment::add_opaque has no unsafe case). The file name is from the earlier belief that "
+    "it was not looked at; the six other checkers that refuse it were right.",
+    msg="opaque o: the value does not have the declared type",
+)
+b = base("Nat", "Bool", "Bool.true")
+b.opaque("o", [], ("const", "Bool", []), ("const", "Bool.true", []))
+add(
+    "unsafe-opaque-well-typed.ndjson",
+    unsafe_opaque(b),
     "accept",
-    "unsafe opaque o : Bool := Nat.zero: the value has the wrong type, and it does not matter, because no safe declaration can use "
-    "an unsafe constant and the kernel does not run unsafe code. A mutation that took an unsafe opaque for a safe one refused the "
-    "file (found by mutation testing).",
+    "the control for the previous file: an opaque constant marked unsafe whose type and value are safe and well typed.",
 )
 
 # Quot.lift with its quotient argument missing is stuck, not an error
@@ -3039,23 +3064,18 @@ add(
     msg="the value does not have the declared type",
 )
 
-# an unsafe opaque constant may mention unsafe constants in its type
+# an unsafe opaque constant may not mention unsafe constants in its type (the kernel checks it with a safe type checker)
 b = Builder()
 b.axiom("U1", [], ("sort", ONE), unsafe=True)
 b.opaque("o", [], ("const", "U1", []), ("const", "U1", []))
-op_lines = []
-for ln in b.lines:
-    o = json.loads(ln)
-    if "opaque" in o:
-        o["opaque"]["isUnsafe"] = True
-        ln = json.dumps(o, separators=(",", ":"), sort_keys=True)
-    op_lines.append(ln)
 add(
     "unsafe-opaque-type-mentions-unsafe.ndjson",
-    "\n".join(op_lines) + "\n",
-    "accept",
-    "unsafe axiom U1 : Type and unsafe opaque o : U1: the type of an unsafe opaque constant is checked with unsafe constants allowed "
-    "(found by mutation testing, as for unsafe axioms and definitions).",
+    unsafe_opaque(b),
+    "reject",
+    "unsafe axiom U1 : Type and unsafe opaque o : U1: the type of an opaque constant is checked with a safe type checker even when "
+    "the constant is unsafe, so it may not mention U1 (environment::add_opaque; unsafe axioms and unsafe definitions are the ones "
+    "checked with unsafe constants allowed).",
+    msg="unsafe or partial",
 )
 
 # a constructor field whose type is ill-typed
@@ -3070,6 +3090,104 @@ add(
     "constructor type, and the sort of the field); the file must be refused if either one is there.",
     msg="application type mismatch",
 )
+
+# The fields of every object are exactly those of the format (found by the fuzzer: files with a field missing or of the wrong kind in a
+# place nobody reads were accepted, and another checker refused them)
+m1s = json.dumps(Builder.META, separators=(",", ":"))
+n1 = '{"in":1,"str":{"pre":0,"str":"x"}}'
+lv = '{"il":1,"succ":0}\n{"ie":0,"sort":0}\n{"ie":1,"const":{"name":1,"us":[]}}'
+for fname, meta, lines, msg_ in [
+    (
+        "meta-without-exporter-version",
+        {"meta": {**Builder.META["meta"], "exporter": {"name": "forge"}}},
+        [],
+        "meta.exporter",
+    ),
+    ("meta-with-an-extra-field", {"meta": {**Builder.META["meta"], "extra": 1}}, [], "meta"),
+    (
+        "meta-lean-version-not-a-string",
+        {"meta": {**Builder.META["meta"], "lean": {"githash": "0", "version": 4}}},
+        [],
+        "expected a string",
+    ),
+    (
+        "binder-without-a-name",
+        None,
+        [n1, lv, '{"ie":2,"lam":{"binderInfo":"default","body":0,"type":0}}'],
+        "lam: the fields must be exactly",
+    ),
+    (
+        "binder-name-not-defined",
+        None,
+        [n1, lv, '{"ie":2,"lam":{"binderInfo":"default","body":0,"name":77,"type":0}}'],
+        "",
+    ),
+    (
+        "binder-info-unknown",
+        None,
+        [n1, lv, '{"ie":2,"lam":{"binderInfo":"weird","body":0,"name":1,"type":0}}'],
+        "unknown binder info",
+    ),
+    (
+        "application-with-an-extra-field",
+        None,
+        [n1, lv, '{"ie":2,"app":{"arg":0,"fn":0,"x":1}}'],
+        "app: the fields must be exactly",
+    ),
+    (
+        "let-nondep-not-a-boolean",
+        None,
+        [n1, lv, '{"ie":2,"letE":{"body":0,"name":1,"nondep":"no","type":0,"value":0}}'],
+        "expected a boolean",
+    ),
+    (
+        "axiom-with-an-extra-field",
+        None,
+        [n1, lv, '{"axiom":{"extra":0,"isUnsafe":false,"levelParams":[],"name":1,"type":0}}'],
+        "axiom: the fields must be exactly",
+    ),
+    (
+        "axiom-without-unsafe-flag",
+        None,
+        [n1, lv, '{"axiom":{"levelParams":[],"name":1,"type":0}}'],
+        "axiom: the fields must be exactly",
+    ),
+    (
+        "def-with-unknown-safety",
+        None,
+        [n1, lv, '{"def":{"all":[1],"hints":"abbrev","levelParams":[],"name":1,"safety":"maybe","type":0,"value":0}}'],
+        "unknown safety",
+    ),
+    (
+        "def-all-names-nothing-defined",
+        None,
+        [n1, lv, '{"def":{"all":[99],"hints":"abbrev","levelParams":[],"name":1,"safety":"safe","type":0,"value":0}}'],
+        "",
+    ),
+    (
+        "mdata-with-an-extra-field",
+        None,
+        [n1, lv, '{"ie":2,"mdata":{"data":[],"expr":0,"x":1}}'],
+        "mdata: the fields must be expr and data",
+    ),
+    ("negative-expression-index", None, [n1, lv, '{"ie":-1,"sort":0}'], "expected a natural number"),
+    ("negative-level-index", None, [n1, '{"il":-5,"succ":0}'], "expected a natural number"),
+    ("negative-name-index", None, ['{"in":-1,"str":{"pre":0,"str":"x"}}'], "expected a natural number"),
+    (
+        "name-entry-with-an-extra-field",
+        None,
+        ['{"in":1,"str":{"extra":1,"pre":0,"str":"x"}}'],
+        "name: the fields must be exactly",
+    ),
+]:
+    head_ = json.dumps(meta, separators=(",", ":")) if meta else m1s
+    add(
+        f"strict-{fname}.ndjson",
+        "\n".join([head_] + lines) + "\n",
+        "decline" if msg_ != "" else "reject",
+        "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+        msg=msg_ or None,
+    )
 
 # the checker's own work budget and its caches
 b = Builder.extending(prims)
@@ -3141,12 +3259,12 @@ m1 = json.dumps(Builder.META, separators=(",", ":"))
 okname = '{"in":1,"str":{"pre":0,"str":"a"}}'
 oksort = '{"il":1,"succ":0}\n{"ie":0,"sort":0}'
 for fname, lines, msg_, why in [
-    ("missing-field", ['{"ie":1,"app":{"fn":0}}'], "missing field arg", "an application without its argument"),
+    ("missing-field", ['{"ie":1,"mdata":{"data":[]}}'], "missing field expr", "a metadata node without its expression"),
     (
         "not-an-integer",
-        ['{"in":"x","str":{"pre":0,"str":"a"}}'],
+        ['{"ie":0,"sort":"x"}'],
         "expected an integer",
-        "a name index that is a string",
+        "a reference to a level that is a string",
     ),
     (
         "not-a-boolean",

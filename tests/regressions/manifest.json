@@ -157,8 +157,8 @@
   {
    "path": "string-of-list-wrong-type.ndjson.gz",
    "expect": "reject",
-   "why": "String.ofList is an axiom Nat -> String here and the file compares the literal \"a\" with String.ofList 5. A literal expands through the file's own String.ofList only when it has type List Char -> String (there is no String.mk here either), so the comparison has no meaning and is refused for that reason; a mutation that accepted the constant when either its universe parameters or its type fit expanded the literal anyway and failed later, for another reason.",
-   "msg": "string literal: the environment has no String.ofList or String.mk of type List Char -> String"
+   "why": "String.ofList is an axiom Nat -> String here and the file compares the literal \"a\" with String.ofList 5. A literal expands through the file's own String.ofList only when it has type List Char -> String, so the comparison has no meaning and is refused for that reason; a mutation that accepted the constant when either its universe parameters or its type fit expanded the literal anyway and failed later, for another reason.",
+   "msg": "string literal: the environment has no String.ofList of type List Char -> String"
   },
   {
    "path": "claim-is-rec.ndjson",
@@ -434,8 +434,10 @@
   },
   {
    "path": "blank-lines.ndjson",
-   "expect": "accept",
-   "why": "an empty line between records is skipped."
+   "expect": "reject",
+   "why": "an empty line between records: every line is one record, and an empty line is not valid JSON. The official checker, nanoda and sokonanoda refuse the file for that reason (the panel run of 2026-10-29); WARRANT used to skip such lines.",
+   "msg": "not valid JSON",
+   "may_decline": true
   },
   {
    "path": "eta-struct-first-field-differs.ndjson",
@@ -1003,13 +1005,8 @@
   },
   {
    "path": "string-mk-literal.ndjson.gz",
-   "expect": "accept",
-   "why": "A toolchain whose String has the constructor String.mk (and no String.ofList): the literal \"ab\" is String.mk [a, b]. Found by mutation testing: nothing used the older name."
-  },
-  {
-   "path": "string-mk-literal-wrong.ndjson.gz",
    "expect": "reject",
-   "why": "A toolchain whose String has the constructor String.mk (and no String.ofList): the literal \"ab\" is String.mk [a, b]. Found by mutation testing: nothing used the older name.",
+   "why": "A String with the constructor String.mk and no String.ofList: the literal \"ab\" would be String.mk [a, b] in the kernel of an older toolchain. The official kernel of Lean 4.29 and of 4.34 expands literals through String.ofList only and refuses this file (the panel run of 2026-10-29: official, lazylean, tenet, kiota, nanoda and sokonanoda all refuse it); WARRANT accepted it before and does not any more.",
    "msg": "the value does not have the declared type"
   },
   {
@@ -1368,10 +1365,10 @@
    "msg": "invalid return type"
   },
   {
-   "path": "string-mk-with-universe-parameter.ndjson.gz",
+   "path": "string-of-list-with-universe-parameter.ndjson.gz",
    "expect": "reject",
-   "why": "String.mk.{u} : List Char -> String, with a universe parameter it does not use: a literal would expand to String.mk without levels, which is not that constant, so the environment has no usable constructor for string literals (found by mutation testing).",
-   "msg": "string literal: the environment has no String.ofList or String.mk"
+   "why": "String.ofList.{u} : List Char -> String, with a universe parameter it does not use: a literal would expand to String.ofList without levels, which is not that constant, so the environment has no usable function for string literals (found by mutation testing).",
+   "msg": "string literal: the environment has no String.ofList of type List Char -> String"
   },
   {
    "path": "constructor-field-universe-too-large.ndjson",
@@ -1387,8 +1384,14 @@
   },
   {
    "path": "unsafe-opaque-value-not-checked.ndjson",
+   "expect": "reject",
+   "why": "unsafe opaque o : Bool := Nat.zero: the value has the wrong type. The official kernel checks the value of an opaque constant whether or not it is marked unsafe (environment::add_opaque has no unsafe case). The file name is from the earlier belief that it was not looked at; the six other checkers that refuse it were right.",
+   "msg": "opaque o: the value does not have the declared type"
+  },
+  {
+   "path": "unsafe-opaque-well-typed.ndjson",
    "expect": "accept",
-   "why": "unsafe opaque o : Bool := Nat.zero: the value has the wrong type, and it does not matter, because no safe declaration can use an unsafe constant and the kernel does not run unsafe code. A mutation that took an unsafe opaque for a safe one refused the file (found by mutation testing)."
+   "why": "the control for the previous file: an opaque constant marked unsafe whose type and value are safe and well typed."
   },
   {
    "path": "quot-lift-partial-application-eta.ndjson",
@@ -1525,14 +1528,115 @@
   },
   {
    "path": "unsafe-opaque-type-mentions-unsafe.ndjson",
-   "expect": "accept",
-   "why": "unsafe axiom U1 : Type and unsafe opaque o : U1: the type of an unsafe opaque constant is checked with unsafe constants allowed (found by mutation testing, as for unsafe axioms and definitions)."
+   "expect": "reject",
+   "why": "unsafe axiom U1 : Type and unsafe opaque o : U1: the type of an opaque constant is checked with a safe type checker even when the constant is unsafe, so it may not mention U1 (environment::add_opaque; unsafe axioms and unsafe definitions are the ones checked with unsafe constants allowed).",
+   "msg": "unsafe or partial"
   },
   {
    "path": "constructor-field-ill-typed.ndjson",
    "expect": "reject",
    "why": "T.mk : List.{0} (Sort 3) -> T: the field's type applies List to something that is not a Type 0. Two checks look at it (the whole constructor type, and the sort of the field); the file must be refused if either one is there.",
    "msg": "application type mismatch"
+  },
+  {
+   "path": "strict-meta-without-exporter-version.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "meta.exporter"
+  },
+  {
+   "path": "strict-meta-with-an-extra-field.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "meta"
+  },
+  {
+   "path": "strict-meta-lean-version-not-a-string.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "expected a string"
+  },
+  {
+   "path": "strict-binder-without-a-name.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "lam: the fields must be exactly"
+  },
+  {
+   "path": "strict-binder-name-not-defined.ndjson",
+   "expect": "reject",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through."
+  },
+  {
+   "path": "strict-binder-info-unknown.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "unknown binder info"
+  },
+  {
+   "path": "strict-application-with-an-extra-field.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "app: the fields must be exactly"
+  },
+  {
+   "path": "strict-let-nondep-not-a-boolean.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "expected a boolean"
+  },
+  {
+   "path": "strict-axiom-with-an-extra-field.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "axiom: the fields must be exactly"
+  },
+  {
+   "path": "strict-axiom-without-unsafe-flag.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "axiom: the fields must be exactly"
+  },
+  {
+   "path": "strict-def-with-unknown-safety.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "unknown safety"
+  },
+  {
+   "path": "strict-def-all-names-nothing-defined.ndjson",
+   "expect": "reject",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through."
+  },
+  {
+   "path": "strict-mdata-with-an-extra-field.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "mdata: the fields must be expr and data"
+  },
+  {
+   "path": "strict-negative-expression-index.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "expected a natural number"
+  },
+  {
+   "path": "strict-negative-level-index.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "expected a natural number"
+  },
+  {
+   "path": "strict-negative-name-index.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "expected a natural number"
+  },
+  {
+   "path": "strict-name-entry-with-an-extra-field.ndjson",
+   "expect": "decline",
+   "why": "a shape the export format does not have: declined (or refused, for a reference to nothing), never read through.",
+   "msg": "name: the fields must be exactly"
   },
   {
    "path": "work-budget-exhausted.ndjson.gz",
@@ -1560,13 +1664,13 @@
   {
    "path": "parse-missing-field.ndjson",
    "expect": "decline",
-   "why": "an application without its argument: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
-   "msg": "missing field arg"
+   "why": "a metadata node without its expression: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+   "msg": "missing field expr"
   },
   {
    "path": "parse-not-an-integer.ndjson",
    "expect": "decline",
-   "why": "a name index that is a string: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
+   "why": "a reference to a level that is a string: the parser declines with the reason (found by coverage: none of the parser's complaints was reached by a test).",
    "msg": "expected an integer"
   },
   {
