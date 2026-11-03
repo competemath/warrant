@@ -155,7 +155,6 @@ let n_nat = nm "Nat"
 let n_nat_zero = nm "Nat.zero"
 let n_nat_succ = nm "Nat.succ"
 let n_string = nm "String"
-let n_string_mk = nm "String.mk"
 let n_char = nm "Char"
 let n_char_of_nat = nm "Char.ofNat"
 let n_list_nil = nm "List.nil"
@@ -231,30 +230,24 @@ let nat_lit_to_ctor st z =
     reject "natural number literal: the environment's Nat is not the genuine one";
   if Z.equal z Z.zero then mk_const n_nat_zero else E.app (mk_const n_nat_succ) (E.nat (Z.pred z))
 
-(* The meaning of a string literal is the application of the environment's own list-to-string function to the list of
-   its characters: [String.ofList] in current toolchains, [String.mk] in older ones. Whichever is used must have type
-   [List Char -> String]; a file without one has no string literals. *)
+(* The meaning of a string literal is the application of the environment's own [String.ofList] to the list of its
+   characters, as in the official kernel (string_lit_to_constructor, Lean 4.29 to 4.34). It must have type
+   [List Char -> String]; a file without one has no string literals. The older constructor name [String.mk] is not
+   accepted: the official kernel does not accept it either. *)
 let n_string_of_list = nm "String.ofList"
 
 let string_ctor_name st =
-  let ok n =
-    match Env.find st.env n with
-    | Some d ->
-        d.lparams = []
-        && d.ty
-           == E.pi
-                (E.app (E.const (nm "List") [ Level.zero ]) (mk_const n_char))
-                (mk_const n_string)
-    | None -> false
-  in
-  if ok n_string_of_list then n_string_of_list
-  else if ok n_string_mk then n_string_mk
-  else
-    reject
-      "string literal: the environment has no String.ofList or String.mk of type List Char -> \
-       String"
+  match Env.find st.env n_string_of_list with
+  | Some d
+    when d.lparams = []
+         && d.ty
+            == E.pi
+                 (E.app (E.const (nm "List") [ Level.zero ]) (mk_const n_char))
+                 (mk_const n_string) ->
+      n_string_of_list
+  | _ -> reject "string literal: the environment has no String.ofList of type List Char -> String"
 
-let is_string_ctor e = is_const_named e n_string_mk || is_const_named e n_string_of_list
+let is_string_ctor e = is_const_named e n_string_of_list
 
 let string_lit_to_ctor st s =
   let char_ty = mk_const n_char in

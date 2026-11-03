@@ -174,6 +174,22 @@ def run_stages(work, args):
     return "survived", "", False
 
 
+def changed_lines(ref):
+    """{file: set of line numbers} that `git diff ref` adds or changes in src/, run in the current directory (the repository
+    itself: the scratch copy has no .git, and must be a copy of the working tree)."""
+    out = {}
+    diff = sh(f"git diff -U0 {ref} -- src", pathlib.Path.cwd()).stdout
+    current = None
+    for ln in diff.splitlines():
+        if ln.startswith("+++ b/"):
+            current = ln[6:]
+        elif ln.startswith("@@") and current:
+            m = re.match(r"@@ -\S+ \+(\d+)(?:,(\d+))? @@", ln)
+            start, count = int(m.group(1)), int(m.group(2) if m.group(2) is not None else 1)
+            out.setdefault(current, set()).update(range(start, start + count))
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--work", required=True)
@@ -203,6 +219,12 @@ def main():
         action="append",
         default=None,
         help="the regressions stage runs only the files whose path contains this (repeatable): survivors against new tests",
+    )
+    ap.add_argument(
+        "--changed-since",
+        default=None,
+        metavar="REF",
+        help="only the mutants on lines that `git diff REF` adds or changes (to try a change before it is merged)",
     )
     ap.add_argument("--no-baseline", action="store_true", help="skip the run of the tests on the unmutated tree")
     ap.add_argument("--jobs", type=int, default=4, help="files run side by side in each stage")
@@ -235,6 +257,9 @@ def main():
             return (str(pathlib.Path(path).relative_to(work)), text.splitlines()[lineno - 1].strip(), text[a:b], rep)
 
         cands = [c for c in cands if key(c) in wanted]
+    if args.changed_since:
+        changed = changed_lines(args.changed_since)
+        cands = [c for c in cands if c[4] in changed.get(str(pathlib.Path(c[0]).relative_to(work)), ())]
     cands = list(dict.fromkeys(cands))
     random.Random(args.seed).shuffle(cands)
     shard, shards = (int(x) for x in args.shard.split("/"))

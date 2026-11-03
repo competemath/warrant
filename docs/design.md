@@ -39,8 +39,10 @@ universe substitution, a term with loose bound variables, a recursor named after
 * **Shortcuts are optional.** The kernel's name-keyed accelerations (natural-number literals and their arithmetic) are
   enabled only when the environment's constant of that name has the fingerprint of the genuine definition
   (`src/fingerprint.ml`, `src/prim_digests.ml`). A file that defines its own `Nat.add` gets unfolding, never the
-  shortcut. Unsafe and partial declarations are recorded as constants no safe declaration may mention; their values are
-  never read.
+  shortcut. Unsafe and partial definitions and unsafe axioms are recorded as constants no safe declaration may mention;
+  the values of the definitions are never read (an opaque constant is checked in full whether or not it is marked
+  unsafe, as in the official kernel). What this leaves different from the official kernel is in
+  [other-checkers.md](other-checkers.md).
 * **Decline over trust.** Exit code 2 means "not covered": a resource limit, a format version, an unsupported feature.
   The checker never accepts to be helpful.
 

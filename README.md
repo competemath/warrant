@@ -23,6 +23,9 @@ _build/default/bin/main.exe file.ndjson     # exit 0 accepted, 1 rejected, 2 dec
 | The caches emptied after every declaration give the same verdicts; every term hashing alike (hash-consing decided by the equality tests alone) | `arena.py --env WARRANT_CACHE_LIMIT=0 ...`, `dune test` (test/test_collide.ml runs with `WARRANT_HASH_MASK=0`) | CI |
 | A second checker (nanoda, pinned) on the same files | `python3 tools/differential.py --binary ... --other 'CMD < {file}' ...` | weekly (`tools/differential_known.json` lists the understood differences) |
 
+What nine other checkers say about these files, and which side was right in each disagreement:
+[docs/other-checkers.md](docs/other-checkers.md).
+
 `tools/slice.py` cuts the closure of named declarations out of a large export (a 347 MB Init export becomes a 1 MB file
 that still shows one slow declaration); the Init export itself is checked by hand, it is too large for the repository
 (accepted: 357 s on one core, 4.1 GB resident, toolchain 4.34.0-rc2).

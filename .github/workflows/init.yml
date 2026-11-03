@@ -1,0 +1,62 @@
+# The whole of Lean's core library (Init), exported by the official exporter and checked by WARRANT: the one test that is real mathematics
+# at the scale of 58,000 declarations. The toolchain is Lean 4.34.0 (downloaded and checked against a digest), the exporter is lean4export at
+# the tag of the same version (a pinned commit), the format is 3.1.0. A file the exporter writes that WARRANT does not accept fails the run;
+# nothing here is Lean's verdict on WARRANT: it is WARRANT's verdict on Lean's own library, which Lean's kernel accepted.
+name: init
+on:
+  schedule:
+    - cron: "11 6 * * 5"   # Fridays
+  workflow_dispatch:
+  pull_request:
+    paths: [".github/workflows/init.yml"]   # a change to this workflow is tried on the pull request that makes it
+permissions: {}
+concurrency:
+  group: init
+  cancel-in-progress: false
+env:
+  LEAN_VERSION: "4.34.0"
+  LEAN_SHA256: "caaa98356098c85dc0fcbbd28e1ec66f39eb6551829972b752ff20e1286b646b"
+jobs:
+  init:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    permissions: { contents: read }
+    steps:
+      - uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
+        with: { egress-policy: audit }
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: leanprover/lean4export
+          ref: 076e8e57707e813375e8f9da8bf989799ace9680 # v4.34.0
+          path: lean4export
+          persist-credentials: false
+      - uses: ocaml/setup-ocaml@ff66428f72b64472e749b22e0ad4dded4b2ddca6 # v3.9.1
+        with:
+          ocaml-compiler: "5.3"
+          dune-cache: true
+      - run: opam install . --deps-only --yes && opam exec -- dune build ./bin/main.exe
+      - name: Lean toolchain
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/lean.tar.zst" "https://github.com/leanprover/lean4/releases/download/v${LEAN_VERSION}/lean-${LEAN_VERSION}-linux.tar.zst"
+          echo "${LEAN_SHA256}  $RUNNER_TEMP/lean.tar.zst" | sha256sum -c -
+          mkdir "$RUNNER_TEMP/lean"
+          tar --zstd -xf "$RUNNER_TEMP/lean.tar.zst" -C "$RUNNER_TEMP/lean" --strip-components=1
+          echo "$RUNNER_TEMP/lean/bin" >> "$GITHUB_PATH"
+      - name: Build the exporter
+        working-directory: lean4export
+        run: |
+          lean --version
+          lake build
+      - name: Export Init
+        working-directory: lean4export
+        run: |
+          lake env .lake/build/bin/lean4export Init > "$RUNNER_TEMP/init.ndjson"
+          ls -l "$RUNNER_TEMP/init.ndjson"
+          head -c 400 "$RUNNER_TEMP/init.ndjson"; echo
+      - name: Check it
+        run: |
+          /usr/bin/time -v _build/default/bin/main.exe "$RUNNER_TEMP/init.ndjson" 2> "$RUNNER_TEMP/time.txt" | tee "$RUNNER_TEMP/verdict.txt"
+          grep -E "Maximum resident|Elapsed" "$RUNNER_TEMP/time.txt"
+          [ "$(cat "$RUNNER_TEMP/verdict.txt")" = "accepted" ]
